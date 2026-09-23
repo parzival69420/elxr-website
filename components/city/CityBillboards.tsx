@@ -69,7 +69,7 @@ function makeLettering(text: string, aspect: number, style: number) {
   if(aspect<2){ctx.fillText("ELXR  /  NEW YORK", width / 2, height * 0.93);ctx.fillText("IDEAS LIVE HERE", width / 2, height * 0.07);}
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
+  texture.anisotropy = 16;
   return texture;
 }
 
