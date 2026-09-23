@@ -36,7 +36,8 @@
     ".next-city-production/types/**/*.ts",
     ".next-bottles-production/types/**/*.ts",
     ".next-agency-check/types/**/*.ts",
-    ".next-city-realism/types/**/*.ts"
+    ".next-city-realism/types/**/*.ts",
+    ".next-reveal-check/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import CentralPark from "./CentralPark";
 import { cityJourney, onIsland, random, shoreline } from "@/lib/city";
 
 export function Ground() {
@@ -38,6 +37,12 @@ export function Ground() {
     const streets = new THREE.BufferGeometry().setFromPoints(points);
     return { island, coast, streets };
   }, []);
+  // 0 = the navy loading map, 1 = the lit night city. Follows the reveal.
+  const reveal = useMemo(() => ({ uReveal: { value: 0 } }), []);
+  const water = useMemo(() => ({ uReveal: reveal.uReveal }), [reveal]);
+  useFrame(() => {
+    reveal.uReveal.value = 1 - Math.pow(1 - cityJourney.reveal, 3);
+  });
   useEffect(
     () => () => {
       island.dispose();
@@ -53,8 +58,9 @@ export function Ground() {
         <shaderMaterial
           transparent
           depthWrite={false}
+          uniforms={water}
           vertexShader={`varying float depth;varying vec3 world;void main(){world=(modelMatrix*vec4(position,1.)).xyz;vec4 p=modelViewMatrix*vec4(position,1.);depth=-p.z;gl_Position=projectionMatrix*p;}`}
-          fragmentShader={`varying float depth;varying vec3 world;
+          fragmentShader={`varying float depth;varying vec3 world;uniform float uReveal;
           void main(){
             float ripple=.5+.5*sin(world.z*17.+sin(world.x*8.)*2.);
             float shimmer=pow(.5+.5*sin(world.x*22.+sin(world.z*.4)),8.);
@@ -62,15 +68,18 @@ export function Ground() {
             vec3 c=vec3(.003,.009,.018)+vec3(.014,.027,.046)*coast*(.3+ripple*.7);
             c+=mix(vec3(.045,.01,.034),vec3(.025,.05,.068),step(0.,world.x))*coast*shimmer;
             c=mix(c,vec3(.003,.005,.008),smoothstep(65.,190.,depth));
+            c=mix(vec3(.0015,.003,.016),c,uReveal);
             gl_FragColor=vec4(c,1.-smoothstep(150.,260.,depth));
           }`}
         />
       </mesh>
       <mesh geometry={island}>
         <shaderMaterial
+          uniforms={reveal}
           vertexShader={`varying vec3 vWorld;void main(){vec4 world=modelMatrix*vec4(position,1.);vWorld=world.xyz;gl_Position=projectionMatrix*viewMatrix*world;}`}
           fragmentShader={`
             varying vec3 vWorld;
+            uniform float uReveal;
             float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
             void main(){
               vec2 cell=fract((vWorld.xz+vec2(13.25,65.05))/vec2(2.5,2.15));
@@ -89,6 +98,11 @@ export function Ground() {
               color+=vec3(.12,.006,.046)*exp(-abs(vWorld.x+2.5)*1.4)*exp(-abs(vWorld.z-2.)*.16)*streak*.3;
               float distance=length(cameraPosition-vWorld);
               color=mix(color,vec3(.004,.006,.009),1.-exp(-distance*.006));
+              // Loading map: navy blocks inside lighter street borders; the 2D map's colours in linear space (OutputPass converts).
+              float lotLine=1.-smoothstep(.0,.03,abs(fract(vWorld.x*.8+hash(floor(vWorld.xz/vec2(2.5,2.15)))*.5)-.5)-.47);
+              vec3 block=mix(vec3(.0033,.0056,.037),vec3(.0056,.0103,.068),step(.85,hash(floor((vWorld.xz+vec2(13.25,65.05))/vec2(2.5,2.15)))));
+              vec3 mapColor=mix(block,vec3(.0103,.0203,.133),max(1.-smoothstep(.17,.21,min(edge.x,edge.y)),lotLine*.25));
+              color=mix(mapColor,color,uReveal);
               gl_FragColor=vec4(color,1.);
             }`}
         />
@@ -99,8 +113,6 @@ export function Ground() {
       <lineSegments geometry={streets}>
         <lineBasicMaterial color="#34405e" transparent opacity={0.14} />
       </lineSegments>
-      <Plaza />
-      <CentralPark />
     </>
   );
 }
@@ -163,7 +175,7 @@ export function Traffic({ reduced }: { reduced: boolean }) {
   );
 }
 
-function Plaza() {
+export function Plaza() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-2.6, 0.065, 6.5]}>

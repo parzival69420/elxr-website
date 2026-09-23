@@ -1,7 +1,7 @@
 "use client";
 
 import "@/lib/rafFallback";
-import { Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { Suspense, type ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -11,17 +11,32 @@ import {
   MAP_CENTER,
   mapViewHeight,
   cityJourney,
-  landmarks,
-  type LandmarkId,
+  LOAD_ZOOM,
   type CityCommand,
   type CityAction,
 } from "@/lib/city";
-import { Ground, Broadway, Traffic } from "./CityGeometry";
+import { Ground, Broadway, Plaza, Traffic } from "./CityGeometry";
+import CentralPark from "./CentralPark";
 import { CityBuildings, CityEnvironment, CityLandmarks, CityStreetLife } from "./CityArchitecture";
 import CityBillboards from "./CityBillboards";
 import { CityAtmosphere, CityEffects } from "./CityAtmosphere";
 
 const CITY_TARGET = new THREE.Vector3(-2, 8, -3);
+const REVEAL_TILT = 0.42;
+const REVEAL_TURN = 0.18;
+const easeReveal = (value: number) => 1 - Math.pow(1 - value, 3);
+
+/** The city rises out of the flat map once the scene is ready. */
+function Reveal({ children }: { children: ReactNode }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(() => {
+    if (!group.current) return;
+    const rise = easeReveal(cityJourney.reveal);
+    group.current.scale.y = Math.max(0.002, rise);
+    group.current.visible = cityJourney.reveal > 0.001;
+  });
+  return <group ref={group}>{children}</group>;
+}
 
 function CameraRig({
   reduced,
@@ -50,19 +65,23 @@ function CameraRig({
     const t = reduced ? (p > 0.5 ? 1 : 0) : p;
     const mapHeight = mapViewHeight(size.width / size.height);
     const mapRadius = mapHeight / (2 * Math.tan(THREE.MathUtils.degToRad(24)));
-    const radius = THREE.MathUtils.lerp(
-      mapRadius,
-      size.width < 768 ? 54 : 49,
-      t,
-    );
+    // Before the reveal finishes, the camera sits closer: the zoomed-in loading map.
+    const settle = THREE.MathUtils.lerp(1 / LOAD_ZOOM, 1, easeReveal(cityJourney.reveal));
+    const radius =
+      THREE.MathUtils.lerp(mapRadius, size.width < 768 ? 54 : 49, t) *
+      THREE.MathUtils.lerp(settle, 1, t);
     const centerX = THREE.MathUtils.lerp(MAP_CENTER.x, CITY_TARGET.x, t);
-    const angle = THREE.MathUtils.lerp(0.006, 1.14, t);
-    const azimuth = THREE.MathUtils.lerp(MAP_ROTATION, -0.02, t);
+    // The reveal tilts the flat map into an aerial and turns it slightly, so the rising city reads.
+    const rise = easeReveal(cityJourney.reveal);
+    const angle = THREE.MathUtils.lerp(0.006 + REVEAL_TILT * rise, 1.14, t);
+    const azimuth = THREE.MathUtils.lerp(MAP_ROTATION + REVEAL_TURN * rise, -0.02, t);
     const z = THREE.MathUtils.lerp(MAP_CENTER.z, CITY_TARGET.z, t);
+    // The camera leans back toward the bottom of the screen, so the aerial reads upright.
+    const heading = THREE.MathUtils.lerp(-(MAP_ROTATION + REVEAL_TURN * rise), -0.02, t);
     camera.position.set(
-      centerX + Math.sin(azimuth) * Math.sin(angle) * radius,
+      centerX + Math.sin(heading) * Math.sin(angle) * radius,
       Math.cos(angle) * radius + 2,
-      Math.cos(azimuth) * Math.sin(angle) * radius + z,
+      Math.cos(heading) * Math.sin(angle) * radius + z,
     );
     target.set(centerX, THREE.MathUtils.lerp(0, CITY_TARGET.y, t), z);
     camera.up
@@ -78,49 +97,22 @@ function CityInteraction({
   onExplore,
   command,
   reduced,
-  selected,
 }: {
   enabled: boolean;
   onExplore: () => void;
   command: CityCommand;
   reduced: boolean;
-  selected: LandmarkId | null;
 }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, gl } = useThree();
-  const flight = useRef<{position:THREE.Vector3;target:THREE.Vector3}|null>(null);
   useEffect(() => {
-    if (!enabled || !selected) return;
-    const landmark = landmarks.find(item => item.id === selected);
-    if (!landmark) return;
-    const [x,height,z] = landmark.position;
-    const target = new THREE.Vector3(x,height*.48,z);
-    const distance = Math.max(26,height*1.35);
-    const position = target.clone().add(selected==="times-square"
-      ? new THREE.Vector3(1.5,3.5,25)
-      : new THREE.Vector3(12,distance*.23,distance));
-    flight.current = {position,target};
-  }, [selected,enabled]);
-  useEffect(() => {
-    if(command.action==="reset"){
-      flight.current=null;
-      controls.current?.target.copy(CITY_TARGET);
-    }
+    if (command.action === "reset") controls.current?.target.copy(CITY_TARGET);
   }, [command]);
-  useFrame((_,delta)=>{
-    if(!flight.current||!controls.current)return;
-    const t=reduced?1:1-Math.exp(-delta*3.8);
-    camera.position.lerp(flight.current.position,t);
-    controls.current.target.lerp(flight.current.target,t);
-    controls.current.update();
-    if(camera.position.distanceTo(flight.current.position)<.015)flight.current=null;
-  });
   const apply = useCallback(
     (action: CityAction) => {
       if (!enabled) return;
       if (action === "reset") return;
       onExplore();
-      flight.current=null;
       const pivot = controls.current?.target ?? CITY_TARGET;
       const offset = camera.position.clone().sub(pivot);
       const sphere = new THREE.Spherical().setFromVector3(offset);
@@ -196,7 +188,7 @@ function CityInteraction({
       rotateSpeed={0.45}
       minPolarAngle={0.42}
       maxPolarAngle={1.42}
-      onStart={() => { flight.current=null; onExplore(); }}
+      onStart={onExplore}
       touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.ROTATE }}
     />
   );
@@ -208,10 +200,8 @@ export default function CityCanvas({
   active = true,
   interactive = false,
   exploring = false,
-  selected = null,
   command = { id: 0, action: "reset" },
   onExplore = () => {},
-  onSelect = () => {},
   onReady = () => {},
   onFailure = () => {},
   onCameraChange,
@@ -221,10 +211,8 @@ export default function CityCanvas({
   active?: boolean;
   interactive?: boolean;
   exploring?: boolean;
-  selected?: LandmarkId | null;
   command?: CityCommand;
   onExplore?: () => void;
-  onSelect?: (id: LandmarkId) => void;
   onReady?: () => void;
   onFailure?: () => void;
   onCameraChange?: (position: string) => void;
@@ -259,7 +247,6 @@ export default function CityCanvas({
         command={command}
         onExplore={onExplore}
         reduced={reduced}
-        selected={selected}
       />
       <CameraRig
         reduced={reduced}
@@ -269,17 +256,18 @@ export default function CityCanvas({
       <CityAtmosphere reduced={reduced} />
       <CityEnvironment />
       <Ground />
-      <Broadway />
       <Suspense fallback={null}>
-      <CityBuildings mobile={mobile} />
-      <CityLandmarks onSelect={onSelect} selected={selected} />
-      <CityBillboards
-        reduced={reduced}
-        onSelect={onSelect}
-      />
-      <Traffic reduced={reduced} />
-      <CityStreetLife reduced={reduced} mobile={mobile} />
-      <CityEffects mobile={mobile} onReady={onReady} />
+        <Reveal>
+          <Plaza />
+          <CentralPark />
+          <Broadway />
+          <CityBuildings mobile={mobile} />
+          <CityLandmarks />
+          <CityBillboards reduced={reduced} />
+          <Traffic reduced={reduced} />
+          <CityStreetLife reduced={reduced} mobile={mobile} />
+        </Reveal>
+        <CityEffects mobile={mobile} onReady={onReady} />
       </Suspense>
     </Canvas>
   );

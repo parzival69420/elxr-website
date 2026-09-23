@@ -78,17 +78,149 @@ body {
   color: var(--text);
 }
 
-/* ---------- The one glass treatment (do not invent a second) ---------- */
-.glass {
-  position: relative;
-  background: rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.25rem;
+/* ---------- The one glass treatment (do not invent a second) ----------
+   Liquid glass: a saturated backdrop blur, a light-catching gradient rim,
+   a specular sheen from the top-left and a faint neon edge tint.
+   Every floating surface on the site joins this one selector list instead of
+   defining its own card. Per-surface knobs (all optional):
+     --glass-radius  corner radius
+     --glass-tint    colour laid under the sheen (darker = more legible)
+     --glass-halo    colour of the soft outer glow                          */
+:root {
+  --glass-radius: 22px;
+  --glass-tint: rgba(12, 10, 24, 0.22);
+  --glass-halo: rgba(112, 56, 224, 0.28);
+}
+.glass,
+.site-header.is-past-hero .city-nav,
+.city-menu,
+.city-landmark-card,
+.city-landmark-buttons button,
+.city-camera-buttons button,
+.map-destination,
+.city-explore-link,
+.city-preview-caption,
+.menu-toggle,
+.scroll-arrow,
+.btn-secondary,
+.bottle-stage-controls button,
+.bottle-formulas,
+.formula-open,
+.formula-ingredients,
+.metric-tile,
+.contact-form {
+  isolation: isolate;
+  border: 0;
+  border-radius: var(--glass-radius);
+  background:
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.11) 0%,
+      rgba(255, 255, 255, 0.035) 38%,
+      rgba(255, 255, 255, 0.015) 62%,
+      rgba(255, 255, 255, 0.055) 100%
+    ),
+    var(--glass-tint);
+  backdrop-filter: blur(22px) saturate(180%) brightness(1.06);
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(1.06);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 24px 48px -16px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 22px rgba(255, 255, 255, 0.035),
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 26px 60px -24px rgba(0, 0, 0, 0.75),
+    0 0 42px -14px var(--glass-halo);
+}
+/* The rim: a 1px gradient border that catches light top-left and picks up
+   a pink-to-violet neon refraction bottom-right. */
+.glass::before,
+.site-header.is-past-hero .city-nav::before,
+.city-menu::before,
+.city-landmark-card::before,
+.city-landmark-buttons button::before,
+.city-camera-buttons button::before,
+.map-destination::before,
+.city-explore-link::before,
+.city-preview-caption::before,
+.menu-toggle::before,
+.scroll-arrow::before,
+.btn-secondary::before,
+.bottle-stage-controls button::before,
+.bottle-formulas::before,
+.formula-open::before,
+.formula-ingredients::before,
+.metric-tile::before,
+.contact-form::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.1) 26%,
+    rgba(255, 255, 255, 0.03) 50%,
+    rgba(255, 73, 186, 0.28) 78%,
+    rgba(131, 228, 242, 0.34) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+/* Anything on this list that isn't already positioned anchors its rim. */
+.glass,
+.city-explore-link,
+.menu-toggle,
+.scroll-arrow,
+.btn-secondary,
+.bottle-stage-controls button,
+.bottle-formulas,
+.formula-open,
+.formula-ingredients,
+.metric-tile,
+.contact-form,
+.city-landmark-buttons button,
+.city-camera-buttons button {
+  position: relative;
+}
+/* No blur support, or the viewer asked for less transparency: go solid. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .site-header.is-past-hero .city-nav,
+  .city-menu,
+  .city-landmark-card,
+  .map-destination,
+  .formula-ingredients,
+  .contact-form {
+    --glass-tint: rgba(14, 12, 26, 0.94);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .site-header.is-past-hero .city-nav,
+  .city-menu,
+  .city-landmark-card,
+  .city-landmark-buttons button,
+  .city-camera-buttons button,
+  .map-destination,
+  .city-explore-link,
+  .city-preview-caption,
+  .btn-secondary,
+  .bottle-formulas,
+  .formula-ingredients,
+  .metric-tile,
+  .contact-form {
+    --glass-tint: rgb(18, 16, 30);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 /* ---------- Focus visibility (accessibility floor) ---------- */
@@ -271,8 +403,7 @@ body {
 .menu-toggle {
   width: 49px;
   height: 49px;
-  border: 1px solid rgba(255, 73, 186, 0.65);
-  border-radius: 50%;
+  --glass-radius: 50%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -280,8 +411,9 @@ body {
   gap: 6px;
   transition: background 0.2s;
 }
-.menu-toggle:hover {
-  background: rgba(255, 73, 186, 0.13);
+.menu-toggle:hover,
+.menu-toggle.is-open {
+  --glass-tint: rgba(255, 73, 186, 0.16);
 }
 .menu-toggle span {
   height: 1px;
@@ -397,10 +529,8 @@ body {
   letter-spacing: 0.14em;
   color: #fff;
   white-space: nowrap;
-  padding: 10px 12px;
-  background: #04070dcc;
-  border: 1px solid #d5e4ff29;
-  backdrop-filter: blur(8px);
+  padding: 12px 16px;
+  --glass-radius: 16px;
 }
 .destination-dot {
   display: inline-block;
@@ -458,8 +588,8 @@ body {
   font-size: 12px;
   letter-spacing: 0.02em;
   margin-top: 27px;
-  padding: 0 0 8px;
-  border-bottom: 1px solid var(--city-pink);
+  padding: 12px 22px;
+  --glass-radius: 999px;
   pointer-events: auto;
 }
 .city-explore-link span {
@@ -550,8 +680,7 @@ body {
   justify-content: center;
   width: 32px;
   height: 40px;
-  border: 1px solid #d5e4ff30;
-  border-radius: 20px;
+  --glass-radius: 20px;
   font-size: 18px;
 }
 .city-footer-note {
@@ -599,10 +728,9 @@ body {
   right: 0;
   width: min(600px, 100%);
   min-height: 100svh;
-  background: rgba(5, 7, 25, 0.97);
-  backdrop-filter: blur(24px);
+  --glass-radius: 0;
+  --glass-tint: rgba(8, 7, 20, 0.72);
   padding: 155px 55px 60px;
-  box-shadow: -30px 0 100px #0006;
 }
 .city-menu > .city-eyebrow {
   color: var(--city-pink);
@@ -616,7 +744,7 @@ body {
   font-size: 48px;
   letter-spacing: -0.04em;
   font-weight: 500;
-  border-bottom: 1px solid #ffffff1c;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .city-menu > a:hover {
   color: var(--city-cyan);
@@ -839,12 +967,26 @@ section[id]:not(#top),
   }
 }
 
-.site-header.is-past-hero {
-  background: rgba(3, 5, 8, 0.94);
-  backdrop-filter: blur(18px);
-}
 .site-header.is-past-hero .city-nav {
-  height: 88px;
+  --glass-radius: 999px;
+  --glass-tint: rgba(8, 7, 20, 0.5);
+  height: 64px;
+  margin: 12px auto 0;
+  width: min(1180px, calc(100% - 24px));
+  padding: 0 10px 0 28px;
+}
+.site-header.is-past-hero .elxr-wordmark {
+  font-size: 28px;
+}
+.site-header.is-past-hero .elxr-wordmark span {
+  display: none;
+}
+.site-header.is-past-hero .nav-contact {
+  min-height: 44px;
+}
+.site-header.is-past-hero .menu-toggle {
+  width: 44px;
+  height: 44px;
 }
 .city-subline {
   color: #f1f2f8;
@@ -853,11 +995,6 @@ section[id]:not(#top),
     0 1px 5px #050719,
     0 0 15px #050719,
     0 0 30px #050719;
-}
-.city-explore-link {
-  background: rgba(5, 7, 25, 0.65);
-  padding: 9px 18px;
-  border-bottom: 1px solid var(--city-pink);
 }
 .city-skyline-copy .city-eyebrow {
   text-shadow:
@@ -979,26 +1116,26 @@ section[id]:not(#top),
 }
 .city-landmark-buttons button,
 .city-camera-buttons button {
-  border: 1px solid #b5c6e43a;
-  background: #04070dea;
-  backdrop-filter: blur(12px);
-  padding: 10px 13px;
+  --glass-radius: 999px;
+  --glass-tint: rgba(6, 8, 18, 0.55);
+  padding: 10px 16px;
   font-size: 12px;
   min-height: 44px;
   color: #e5edff;
-  transition:
-    border-color 0.2s,
-    background 0.2s;
+  transition: background 0.2s;
 }
 .city-landmark-buttons button:hover,
-.city-camera-buttons button:hover,
+.city-camera-buttons button:hover {
+  --glass-tint: rgba(40, 30, 70, 0.55);
+}
 .city-landmark-buttons button[aria-pressed="true"] {
-  border-color: var(--city-pink);
-  background: #49113ca6;
+  --glass-tint: rgba(255, 73, 186, 0.3);
+  --glass-halo: rgba(255, 73, 186, 0.55);
+  color: #fff;
 }
 .city-camera-buttons button {
   min-width: 44px;
-  padding: 8px 11px;
+  padding: 8px 14px;
   font-size: 15px;
 }
 .city-camera-buttons .city-reset {
@@ -1011,12 +1148,10 @@ section[id]:not(#top),
   bottom: 213px;
   width: 320px;
   max-width: calc(100% - 44px);
-  padding: 27px;
-  background: rgba(5, 10, 27, 0.94);
-  backdrop-filter: blur(20px);
-  border: 1px solid #7895c442;
-  border-top: 1px solid var(--city-pink);
-  box-shadow: 0 15px 60px #0006;
+  padding: 28px;
+  --glass-radius: 26px;
+  --glass-tint: rgba(8, 8, 22, 0.62);
+  --glass-halo: rgba(255, 73, 186, 0.3);
 }
 .city-landmark-card .city-eyebrow {
   font-size: 10px;
@@ -1236,16 +1371,13 @@ section[id]:not(#top),
   pointer-events: auto;
   width: 46px;
   height: 46px;
-  border: 1px solid #34414e;
-  border-radius: 50%;
+  --glass-radius: 50%;
   color: #e5eef4;
-  transition:
-    background 0.2s,
-    border-color 0.2s;
+  transition: background 0.2s;
 }
 .bottle-stage-controls button:hover {
-  border-color: var(--formula-color);
-  background: #111922;
+  --glass-tint: color-mix(in srgb, var(--formula-color) 22%, transparent);
+  --glass-halo: color-mix(in srgb, var(--formula-color) 55%, transparent);
 }
 .bottle-stage-controls button:disabled {
   opacity: 0.3;
@@ -1266,13 +1398,15 @@ section[id]:not(#top),
 .bottle-formulas {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  border-top: 1px solid #2b343d;
-  border-bottom: 1px solid #2b343d;
+  gap: 4px;
+  padding: 6px;
+  --glass-radius: 26px;
 }
 .bottle-formulas button {
   position: relative;
-  min-height: 102px;
-  padding: 20px 18px;
+  min-height: 96px;
+  padding: 18px 16px;
+  border-radius: 20px;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -1285,23 +1419,29 @@ section[id]:not(#top),
     background 0.25s,
     color 0.25s;
 }
-.bottle-formulas button + button {
-  border-left: 1px solid #242d35;
-}
 .bottle-formulas button[aria-selected="true"] {
-  background: #0e151d;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    color-mix(in srgb, var(--formula-color) 14%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 8px 24px -10px color-mix(in srgb, var(--formula-color) 70%, transparent);
   color: #f4f7fb;
 }
 .bottle-formulas button[aria-selected="true"]:after {
   content: "";
   position: absolute;
-  inset: -1px 0 auto;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
   height: 2px;
+  border-radius: 2px;
   background: var(--formula-color);
+  box-shadow: 0 0 12px var(--formula-color);
 }
 .bottle-formulas button:hover {
   color: white;
-  background: #0b1118;
+  background: rgba(255, 255, 255, 0.04);
 }
 .formula-number {
   font-size: 10px;
@@ -1354,15 +1494,14 @@ section[id]:not(#top),
   display: flex;
   align-items: center;
   gap: 30px;
-  border: 1px solid #526472;
+  --glass-radius: 999px;
   color: #edf5f9;
-  padding: 12px 17px;
-  border-radius: 3px;
+  padding: 13px 22px;
   font-size: 13px;
-  transition: border-color 0.2s;
+  transition: background 0.2s;
 }
 .formula-open:hover {
-  border-color: var(--formula-color);
+  --glass-tint: color-mix(in srgb, var(--formula-color) 20%, transparent);
 }
 .formula-open span {
   color: var(--formula-color);
@@ -1379,9 +1518,10 @@ section[id]:not(#top),
   color: var(--formula-color);
 }
 .formula-ingredients {
-  padding: 28px 30px;
-  background: #0c131b;
-  border-left: 2px solid var(--formula-color);
+  padding: 30px 32px;
+  --glass-radius: 26px;
+  --glass-tint: color-mix(in srgb, var(--formula-color) 7%, rgba(10, 9, 22, 0.35));
+  --glass-halo: color-mix(in srgb, var(--formula-color) 45%, transparent);
 }
 .formula-ingredients ul {
   display: flex;
@@ -1500,7 +1640,7 @@ section[id]:not(#top),
   font-weight: 500;
 }
 .metric-tile {
-  border-left: 1px solid #2c353e;
+  --glass-radius: 24px;
 }
 .manifesto-section {
   padding: 120px 0 150px;
@@ -1532,12 +1672,6 @@ section[id]:not(#top),
   }
   .bottle-formulas button {
     min-height: 80px;
-  }
-  .bottle-formulas button:nth-child(4) {
-    border-left: 0;
-  }
-  .bottle-formulas button:nth-child(n + 4) {
-    border-top: 1px solid #242d35;
   }
   .formula-panel {
     gap: 32px;
@@ -1588,15 +1722,6 @@ section[id]:not(#top),
     padding: 17px 12px;
     min-height: 81px;
     font-size: 12px;
-  }
-  .bottle-formulas button:nth-child(n + 3) {
-    border-top: 1px solid #242d35;
-  }
-  .bottle-formulas button:nth-child(4) {
-    border-left: 1px solid #242d35;
-  }
-  .bottle-formulas button:nth-child(odd) {
-    border-left: 0;
   }
   .formula-dot {
     left: 37px;
@@ -1887,8 +2012,8 @@ section[id]:not(#top),
   font-size: 10px;
   letter-spacing: 0.1em;
   color: #ddf8ff;
-  padding: 12px;
-  background: #030610cc;
+  padding: 12px 16px;
+  --glass-radius: 14px;
 }
 @media (max-width: 767px) {
   .city-preview-caption {
@@ -1929,13 +2054,12 @@ section[id]:not(#top),
   background: #8250ef;
 }
 .btn-secondary {
-  border: 1px solid rgba(247, 244, 240, 0.35);
-  background: rgba(3, 5, 8, 0.45);
+  --glass-radius: 999px;
   color: var(--text);
   font-weight: 500;
 }
 .btn-secondary:hover {
-  border-color: var(--text);
+  --glass-tint: rgba(255, 255, 255, 0.08);
 }
 .hero-ctas {
   display: flex;
@@ -2276,4 +2400,265 @@ section[id]:not(#top),
   .city-intro .city-intro-caption {
     font-size: 16px;
   }
+}
+
+/* ---------- Liquid layer ----------
+   Glass needs light behind it to read as glass. These are quiet neon pools
+   (brand purple, city pink, city cyan) placed behind the glass surfaces, plus
+   the "liquid" primary button: the elixir itself, glossy and lit from above. */
+.btn-primary,
+.nav-contact,
+.contact-submit {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(255, 255, 255, 0) 52%),
+    radial-gradient(120% 90% at 50% 120%, var(--orchid) 0%, transparent 60%),
+    var(--purple);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 6px rgba(20, 6, 60, 0.45),
+    0 10px 30px -10px rgba(112, 56, 224, 0.85),
+    0 0 0 1px rgba(167, 139, 250, 0.35);
+  transition: box-shadow 0.25s, filter 0.25s;
+}
+.btn-primary:hover,
+.nav-contact:hover,
+.contact-submit:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 52%),
+    radial-gradient(120% 90% at 50% 120%, var(--orchid) 0%, transparent 60%),
+    var(--purple);
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 6px rgba(20, 6, 60, 0.45),
+    0 14px 40px -10px rgba(180, 63, 214, 0.9),
+    0 0 0 1px rgba(167, 139, 250, 0.5);
+}
+.contact-submit {
+  border-radius: 999px;
+  padding: 15px 32px;
+}
+
+/* Floating header: the hero nav stays a quiet rule, past the hero it
+   becomes a glass capsule floating over the page. */
+.site-header.is-past-hero {
+  padding-inline: 0;
+}
+.site-header.is-past-hero .city-nav {
+  transition:
+    height 0.3s,
+    margin 0.3s;
+}
+
+/* Menu: an inset glass sheet rather than an edge-to-edge slab. */
+.city-menu {
+  top: 12px;
+  right: 12px;
+  width: min(560px, calc(100% - 24px));
+  height: calc(100dvh - 24px);
+  --glass-radius: 32px;
+}
+
+/* Numbers strip: glass tiles floating over a violet pool. */
+.metric-tile {
+  overflow: hidden;
+}
+.metric-tile:nth-child(2) {
+  --glass-halo: rgba(255, 73, 186, 0.28);
+}
+.metric-tile:nth-child(3) {
+  --glass-halo: rgba(131, 228, 242, 0.25);
+}
+.metric-grid {
+  position: relative;
+  isolation: isolate;
+}
+.metric-grid::after {
+  content: "";
+  position: absolute;
+  inset: -30% 5%;
+  z-index: -1;
+  background:
+    radial-gradient(40% 60% at 22% 50%, rgba(112, 56, 224, 0.35), transparent 70%),
+    radial-gradient(35% 55% at 62% 40%, rgba(255, 73, 186, 0.16), transparent 70%),
+    radial-gradient(35% 55% at 88% 60%, rgba(131, 228, 242, 0.12), transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+/* Formula panel: the selected formula's colour glows behind its glass. */
+.formula-panel {
+  position: relative;
+  isolation: isolate;
+}
+.formula-panel::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  right: 0;
+  top: 10%;
+  width: 55%;
+  height: 90%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--formula-color) 32%, transparent), transparent);
+  filter: blur(40px);
+  pointer-events: none;
+}
+.bottle-formulas {
+  margin-top: 18px;
+}
+
+/* Contact: the form is a glass sheet over two neon pools. */
+.contact-section {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(40% 55% at 78% 40%, rgba(112, 56, 224, 0.32), transparent 70%),
+    radial-gradient(28% 36% at 90% 68%, rgba(255, 73, 186, 0.16), transparent 70%),
+    radial-gradient(26% 34% at 58% 72%, rgba(131, 228, 242, 0.08), transparent 70%),
+    var(--base);
+}
+.contact-form {
+  --glass-radius: 30px;
+  padding: 36px;
+  align-content: start;
+}
+.contact-form label {
+  color: #c9d2dc;
+}
+.contact-form input,
+.contact-form textarea,
+.contact-form select {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 13px 16px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.contact-form input:focus-visible,
+.contact-form textarea:focus-visible,
+.contact-form select:focus-visible {
+  outline: none;
+  border-color: rgba(167, 139, 250, 0.7);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 4px rgba(167, 139, 250, 0.18),
+    0 0 24px -4px rgba(167, 139, 250, 0.5);
+}
+
+/* Selected work: the case figure is a filled vial, so give it the same
+   continuous corners and lit top edge as the glass. */
+.work-figure {
+  border-radius: 28px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 30px 70px -30px color-mix(in srgb, var(--case-color) 60%, transparent);
+}
+
+/* Glass focus rings follow the surface's own curve. */
+.btn-secondary:focus-visible,
+.btn-primary:focus-visible,
+.nav-contact:focus-visible,
+.formula-open:focus-visible,
+.city-landmark-buttons button:focus-visible,
+.city-camera-buttons button:focus-visible,
+.city-explore-link:focus-visible {
+  border-radius: 999px;
+}
+.menu-toggle:focus-visible,
+.bottle-stage-controls button:focus-visible {
+  border-radius: 50%;
+}
+
+@media (max-width: 767px) {
+  .site-header.is-past-hero .city-nav {
+    height: 58px;
+    margin-top: 10px;
+    width: calc(100% - 20px);
+    padding: 0 7px 0 20px;
+  }
+  .site-header.is-past-hero .elxr-wordmark {
+    font-size: 24px;
+  }
+  .city-menu {
+    top: 8px;
+    right: 8px;
+    width: calc(100% - 16px);
+    height: calc(100dvh - 16px);
+    --glass-radius: 28px;
+  }
+  .contact-form {
+    padding: 22px;
+    --glass-radius: 24px;
+  }
+  .bottle-formulas {
+    --glass-radius: 22px;
+  }
+  .bottle-formulas button {
+    border-radius: 16px;
+  }
+}
+
+/* ---------- Loading: the bare map, then the city rises and the copy arrives ---------- */
+.site-header,
+.city-topline,
+.city-footer-bar,
+.journey-controls {
+  transition: opacity 0.8s ease, visibility 0.8s;
+}
+html[data-city-loading] .site-header,
+html[data-city-loading] .city-topline,
+html[data-city-loading] .city-footer-bar,
+html[data-city-loading] .journey-controls,
+html[data-city-loading] .city-skyline-copy {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.city-intro > * {
+  transition:
+    opacity 0.9s ease,
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.city-intro > :nth-child(2) {
+  transition-delay: 0.08s;
+}
+.city-intro > :nth-child(3) {
+  transition-delay: 0.16s;
+}
+.city-intro > :nth-child(4) {
+  transition-delay: 0.24s;
+}
+html[data-city-loading] .city-intro > * {
+  opacity: 0;
+  transform: translateY(14px);
+}
+html[data-city-loading] .city-intro::before {
+  opacity: 0;
+}
+.city-intro::before {
+  transition: opacity 0.9s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .city-intro > *,
+  .site-header,
+  .city-topline,
+  .city-footer-bar,
+  .journey-controls {
+    transition: none;
+  }
+}
+.city-menu > a:focus-visible {
+  border-radius: 14px;
+  outline-offset: 4px;
 }

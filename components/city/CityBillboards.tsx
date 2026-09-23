@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { cityJourney, type LandmarkId } from "@/lib/city";
 
 const screenVertex = `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
 const screenFragment = /* glsl */ `
@@ -80,21 +79,16 @@ function Screen({
   text,
   style = 0,
   rotation = 0,
-  landmark,
   reduced,
-  onSelect,
 }: {
   position: [number, number, number];
   size: [number, number];
   text: string;
   style?: number;
   rotation?: number;
-  landmark?: LandmarkId;
   reduced: boolean;
-  onSelect: (id: LandmarkId) => void;
 }) {
   const material = useRef<THREE.ShaderMaterial>(null);
-  const [hover, setHover] = useState(false);
   const aspect = size[0] / size[1];
   const texture = useMemo(() => makeLettering(text, aspect, style), [text, aspect, style]);
   const uniforms = useMemo(
@@ -111,11 +105,6 @@ function Screen({
     if (material.current) {
       if (!reduced)
         material.current.uniforms.uTime.value += Math.min(delta, 0.06);
-      material.current.uniforms.uHover.value = THREE.MathUtils.lerp(
-        material.current.uniforms.uHover.value,
-        hover ? 1 : 0,
-        0.1,
-      );
     }
   });
   return (
@@ -128,17 +117,7 @@ function Screen({
           roughness={0.4}
         />
       </mesh>
-      <mesh
-        onClick={(event) => {
-          event.stopPropagation();
-          if (cityJourney.progress > 0.6 && event.delta < 5) onSelect(landmark ?? "times-square");
-        }}
-        onPointerOver={(event) => {
-          event.stopPropagation();
-          setHover(true);
-        }}
-        onPointerOut={() => setHover(false)}
-      >
+      <mesh>
         <planeGeometry args={size} />
         <shaderMaterial
           ref={material}
@@ -155,10 +134,8 @@ function Screen({
 
 export default function CityBillboards({
   reduced,
-  onSelect,
 }: {
   reduced: boolean;
-  onSelect: (id: LandmarkId) => void;
 }) {
   return (
     <>
@@ -167,17 +144,13 @@ export default function CityBillboards({
         size={[2.35, 4.8]}
         text="ELXR"
         style={1}
-        landmark="times-square"
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[-2.5, 3.5, 1.02]}
         size={[2.35, 3.4]}
         text={"MAKE\nSOME\nNOISE."}
-        landmark="times-square"
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[-3.81, 6, 0.1]}
@@ -185,9 +158,7 @@ export default function CityBillboards({
         text={"NEW\nYORK"}
         rotation={-Math.PI / 2}
         style={1}
-        landmark="times-square"
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[-6.5, 7.2, -2.96]}
@@ -195,14 +166,12 @@ export default function CityBillboards({
         text={"STAY\nLOUD."}
         style={1}
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[0, 6.6, -3.06]}
         size={[2.15, 5.6]}
         text="IDEAS."
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[-6.6, 4.3, 6.4]}
@@ -210,7 +179,6 @@ export default function CityBillboards({
         text={"NEW\nYORK."}
         style={0}
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[1.2, 4.4, 6]}
@@ -218,16 +186,13 @@ export default function CityBillboards({
         text={"AFTER\nHOURS"}
         style={0}
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[4, 10.4, -6.85]}
         size={[2.6, 7.5]}
         text={"GROW\nWITH\nUS."}
         style={0}
-        landmark="elxr-tower"
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[5.45, 10, -8]}
@@ -235,9 +200,7 @@ export default function CityBillboards({
         text="ELXR"
         style={1}
         rotation={Math.PI / 2}
-        landmark="elxr-tower"
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[-9, 5.8, 1.29]}
@@ -245,7 +208,6 @@ export default function CityBillboards({
         text={"GOOD\nENERGY"}
         style={0}
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[3, 3, 12]}
@@ -253,7 +215,6 @@ export default function CityBillboards({
         text="CREATIVE."
         style={1}
         reduced={reduced}
-        onSelect={onSelect}
       />
       <Screen
         position={[-5.5, 10, -11]}
@@ -261,7 +222,6 @@ export default function CityBillboards({
         text={"NO\nLIMITS"}
         style={1}
         reduced={reduced}
-        onSelect={onSelect}
       />
       {[
         {p:[-6.5,2.7,-2.95],s:[2.7,1.4],t:"BROADWAY",v:2},
@@ -280,7 +240,7 @@ export default function CityBillboards({
         {p:[4,3,-6.85],s:[2.6,2.5],t:"YOUR NEXT\nBIG THING",v:2},
         {p:[-9,2.6,1.3],s:[2.25,1.7],t:"NIGHT\nSHIFT",v:1},
         {p:[-3,1.05,-1.15],s:[1.7,.42],t:"tkts / BROADWAY",v:1},
-      ].map((ad,i)=><Screen key={i} position={ad.p as [number,number,number]} size={ad.s as [number,number]} text={ad.t} style={ad.v} rotation={ad.r??0} reduced={reduced} onSelect={onSelect} />)}
+      ].map((ad,i)=><Screen key={i} position={ad.p as [number,number,number]} size={ad.s as [number,number]} text={ad.t} style={ad.v} rotation={ad.r??0} reduced={reduced} />)}
     </>
   );
 }

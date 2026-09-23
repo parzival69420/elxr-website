@@ -14,6 +14,12 @@ import Footer from "@/components/Footer";
 export default function Home() {
   return (
     <main>
+      {/* Set before first paint: the page opens on the bare map, and Hero clears this once the city has risen. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: "document.documentElement.dataset.cityLoading='';",
+        }}
+      />
       <Nav />
       <Hero />
       <Thesis />

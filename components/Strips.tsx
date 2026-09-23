@@ -29,7 +29,7 @@ export default function Strips() {
       </div>
 
       {/* numbers strip — glass tiles */}
-      <div className="mx-auto grid w-[min(72rem,calc(100%-3rem))] grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="metric-grid mx-auto grid w-[min(72rem,calc(100%-3rem))] grid-cols-2 gap-4 lg:grid-cols-4">
         {strips.numbers.map((n) => (
           <div
             key={n.value}

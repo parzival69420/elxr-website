@@ -50,12 +50,12 @@ const glass = new THREE.MeshPhysicalMaterial({
   name: "Optical glass",
   color: "#c9f6ff",
   metalness: 0,
-  roughness: 0.075,
-  transmission: 0.96,
+  roughness: 0.025,
+  transmission: 1,
   thickness: 0.22,
   ior: 1.45,
-  transparent: true,
-  opacity: 0.72,
+  transparent: false,
+  opacity: 1,
   clearcoat: 1,
   clearcoatRoughness: 0.05,
   side: THREE.DoubleSide,
@@ -73,15 +73,18 @@ const liquid = new THREE.MeshPhysicalMaterial({
   name: "Liquid",
   color: "#057989",
   emissive: "#08c6e0",
-  emissiveIntensity: 0.38,
-  transmission: 0.3,
+  emissiveIntensity: 0.02,
+  transmission: 0.84,
   thickness: 0.65,
   ior: 1.34,
   roughness: 0.1,
-  transparent: true,
-  opacity: 0.55,
+  transparent: false,
+  opacity: 1,
   depthWrite: false,
 });
+const meniscus = liquid.clone();
+meniscus.name = "Liquid meniscus";
+meniscus.roughness = 0.025;
 const mesh = (parent, geometry, material, name, position = [0, 0, 0]) => {
   const m = new THREE.Mesh(geometry, material);
   m.name = name;
@@ -270,8 +273,19 @@ function chamber() {
     glass,
     "Glass body",
   );
-  cylinder(g, 0.455, 1.62, 1.25, liquid, "Liquid core");
-  coils(g, 0.42, 0.43, 1.72, 2.4);
+  cylinder(g, 0.455, 1.38, 1.1, liquid, "Liquid core");
+  lathe(
+    g,
+    [
+      [0, 1.792],
+      [0.38, 1.792],
+      [0.436, 1.8],
+      [0.455, 1.817],
+    ],
+    meniscus,
+    "Liquid surface",
+  );
+  coils(g, 0.4, 0.43, 1.27, 2.4);
   for (const [y, r] of [
     [0.18, 0.58],
     [0.3, 0.6],
@@ -315,7 +329,7 @@ function chamber() {
   for (const y of [0.5, 0.58, 1.94, 2.02])
     ring(g, 0.508, 0.009, y, energy, "Energy band");
   plaque(g, 1.48, 0.57, 0.6, 0.65);
-  coils(g, 0.24, 2.56, 0.36, 1.5);
+
   for (const y of [0.21, 0.29, 2.18, 2.3]) {
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
@@ -362,9 +376,36 @@ function flask() {
   });
   geom.translate(0, 0, -0.32);
   mesh(g, geom, glass, "Glass body");
-  const core = mesh(g, geom.clone(), liquid, "Liquid core");
-  core.scale.set(0.87, 0.87, 0.77);
-  core.position.y = 0.15;
+  const liquidShape = new THREE.Shape(
+    [
+      [-0.3, 0.35],
+      [-0.63, 0.53],
+      [-0.735, 0.85],
+      [-0.735, 1.78],
+      [0.735, 1.78],
+      [0.735, 0.85],
+      [0.63, 0.53],
+      [0.3, 0.35],
+    ].map(([x, y]) => new THREE.Vector2(x, y)),
+  );
+  const fillGeometry = new THREE.ExtrudeGeometry(liquidShape, {
+    depth: 0.49,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    steps: 1,
+    bevelSize: 0.025,
+    bevelThickness: 0.025,
+  });
+  fillGeometry.translate(0, 0, -0.245);
+  mesh(g, fillGeometry, liquid, "Liquid core");
+  const liquidTop = mesh(
+    g,
+    new THREE.PlaneGeometry(1.47, 0.5, 32, 12),
+    meniscus,
+    "Liquid surface",
+    [0, 1.808, 0],
+  );
+  liquidTop.rotation.x = -Math.PI / 2;
   for (const z of [-0.38, 0.38]) {
     const pts = [...profile, profile[0]].map(([x, y]) => [x, y, z]);
     for (let i = 0; i < pts.length - 1; i++) {
@@ -465,7 +506,7 @@ function flask() {
   ring(g, 0.34, 0.05, 2.48, bronze);
   ring(g, 0.32, 0.025, 2.65, silver);
   ring(g, 0.32, 0.016, 2.77, energy, "Energy neck");
-  coils(g, 0.42, 0.62, 1.57, 2.1);
+  coils(g, 0.38, 0.62, 1.07, 2.1);
   plaque(g, 1.45, 0.43, 0.65, 0.69);
   for (const side of [-1, 1])
     beam(
@@ -513,9 +554,8 @@ function decanter() {
       [0.54, 0.53],
       [0.43, 0.87],
       [0.4, 1.35],
-      [0.4, 2.15],
-      [0.44, 2.24],
-      [0, 2.24],
+      [0.4, 1.88],
+      [0, 1.88],
     ],
     liquid,
     "Liquid core",
@@ -557,7 +597,18 @@ function decanter() {
       pivot.scale.z = 0.8;
     }
   }
-  coils(g, 0.36, 0.45, 1.79, 3.7);
+  lathe(
+    g,
+    [
+      [0, 1.884],
+      [0.34, 1.884],
+      [0.388, 1.894],
+      [0.4, 1.907],
+    ],
+    meniscus,
+    "Liquid surface",
+  );
+  coils(g, 0.35, 0.45, 1.36, 3.7);
   ring(g, 0.48, 0.017, 0.55, energy, "Energy base");
   plaque(g, 1.48, 0.48, 0.57, 0.9);
   stopper(g, 2.95, 0.31, 1);

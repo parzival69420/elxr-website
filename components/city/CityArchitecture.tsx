@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useCursor, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import * as THREE from "three";
-import { cityJourney, onIsland, random, type LandmarkId } from "@/lib/city";
+import { onIsland, random } from "@/lib/city";
 
 const BASE = "/models/city/";
 type Placement = { x: number; z: number; w: number; d: number; h: number; variant: number; seed: number; distant?: boolean };
@@ -47,6 +47,18 @@ export function CityEnvironment() {
   return null;
 }
 
+/** Facade finishes, multiplied onto the kit's materials so no two neighbours read as the same block. */
+const FINISHES = [
+  [0.78, 0.86, 1.0], // cool curtain glass
+  [1.0, 0.92, 0.8], // limestone
+  [0.96, 0.78, 0.68], // brick
+  [0.82, 0.84, 0.88], // steel
+  [0.62, 0.68, 0.8], // dark glass
+  [0.98, 0.9, 0.76], // sandstone
+  [0.86, 0.8, 0.92], // lilac render
+];
+const up = new THREE.Vector3(0, 1, 0);
+
 function InstancedPart({ part, placements, dimensions }: {
   part: THREE.Mesh; placements: Placement[]; dimensions: {width:number;depth:number;height:number};
 }) {
@@ -54,26 +66,52 @@ function InstancedPart({ part, placements, dimensions }: {
   const { matrices, colors } = useMemo(() => {
     const colors: THREE.Color[] = [];
     const matrices = placements.map(({x,z,w,h,d,seed}) => {
-      colors.push(new THREE.Color().setRGB(.72 + seed*.28, .78+seed*.22, .88+seed*.12));
-      return new THREE.Matrix4().makeScale(w/dimensions.width,h/dimensions.height,d/dimensions.depth).setPosition(x,0,z);
+      const finish = FINISHES[Math.floor(seed * 997) % FINISHES.length];
+      const shade = 0.84 + ((seed * 7919) % 1) * 0.28;
+      colors.push(new THREE.Color().setRGB(finish[0]*shade, finish[1]*shade, finish[2]*shade));
+      // One of four orientations; a quarter turn swaps which model axis spans the lot's width.
+      const turn = Math.floor(seed * 4099) % 4;
+      const quarter = turn % 2 === 1;
+      const scale = new THREE.Vector3(
+        (quarter ? d : w) / dimensions.width,
+        h / dimensions.height,
+        (quarter ? w : d) / dimensions.depth,
+      );
+      return new THREE.Matrix4().compose(
+        new THREE.Vector3(x, 0, z),
+        new THREE.Quaternion().setFromAxisAngle(up, (turn * Math.PI) / 2),
+        scale,
+      );
     });
     return { matrices, colors };
   }, [placements, dimensions]);
-  // Instanced interiors vary by address as well as by the source window pattern.
+  // Each building gets its own occupancy, window warmth and weathering, keyed to its address.
   const material = useMemo(() => {
     const value = (part.material as THREE.MeshStandardMaterial).clone();
     if (value.map) value.map.anisotropy = 8;
-    if (/interiors/.test(value.name)) {
-      value.onBeforeCompile = (shader) => {
-        shader.vertexShader = "varying vec3 vBuildingAddress;\n" + shader.vertexShader;
-        shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\n vBuildingAddress = (instanceMatrix * vec4(position, 1.)).xyz;");
-        shader.fragmentShader = "varying vec3 vBuildingAddress;\n" + shader.fragmentShader;
+    const lit = value.emissiveMap !== null || /interiors/.test(value.name);
+    value.onBeforeCompile = (shader) => {
+      shader.vertexShader = "varying vec3 vBuildingAddress;\nvarying vec3 vBuildingOrigin;\n" + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", `#include <begin_vertex>
+        vBuildingAddress = (instanceMatrix * vec4(position, 1.)).xyz;
+        vBuildingOrigin = instanceMatrix[3].xyz;`);
+      shader.fragmentShader = `varying vec3 vBuildingAddress;
+        varying vec3 vBuildingOrigin;
+        float buildingHash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+        ` + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace("#include <color_fragment>", `#include <color_fragment>
+        float building = buildingHash(vBuildingOrigin.xz);
+        float storey = floor(vBuildingAddress.y * 1.5);
+        diffuseColor.rgb *= 0.86 + 0.26 * building;
+        diffuseColor.rgb *= 0.94 + 0.12 * buildingHash(vec2(storey, building * 91.));`);
+      if (lit)
         shader.fragmentShader = shader.fragmentShader.replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
           float room = fract(sin(dot(floor(vBuildingAddress * vec3(4., 3., 4.)), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-          totalEmissiveRadiance *= mix(.09, 1.45, smoothstep(.27, .62, room));`);
-      };
-      value.customProgramCacheKey = () => "city-address-interiors-v1";
-    }
+          float occupancy = mix(0.22, 0.72, building);
+          totalEmissiveRadiance *= mix(.07, 1.45, smoothstep(occupancy - .12, occupancy + .12, room));
+          totalEmissiveRadiance *= mix(vec3(1., .84, .7), vec3(.78, .92, 1.1), fract(building * 7.13));`);
+    };
+    value.customProgramCacheKey = () => `city-unique-building-v2-${lit ? "lit" : "solid"}`;
     return value;
   }, [part]);
   useEffect(() => {
@@ -103,7 +141,9 @@ export function CityBuildings({mobile}:{mobile:boolean}) {
     const step=mobile?5.3:4.2;
     for(let x=-91;x<92;x+=step)for(let z=-105;z<65;z+=step){
       if(Math.abs(x)<18||rand()<.05)continue;
-      data.push({x:x+rand()*.6,z,w:2.8+rand(),d:2.8+rand(),h:2+rand()*10+Math.exp(-Math.pow((z+28)/27,2))*rand()*8,variant:9,seed:rand(),distant:true});
+      // Across the rivers: low-rise Brooklyn, Queens and Jersey City, so Manhattan owns the skyline.
+      const w=2.2+rand()*1.4,d=2.2+rand()*1.4;
+      data.push({x:x+rand()*.6,z:z+rand()*.6,w,d,h:1+rand()*2.6+Math.exp(-Math.pow((z+28)/27,2))*rand()*2.2,variant:rand()<.55?9:Math.floor(rand()*9),seed:rand(),distant:true});
     }
     return Array.from({length:10},(_,i)=>data.filter(p=>p.variant===i));
   }, [mobile]);
@@ -119,22 +159,12 @@ const models = [
   {id:"summit",file:"one-vanderbilt",position:[8,0,-6]},
   {id:"edge",file:"hudson-yards-edge",position:[-10,0,10]},
 ] as const;
-function LandmarkModel({model,onSelect,selected}:{model:typeof models[number];onSelect:(id:LandmarkId)=>void;selected:LandmarkId|null}) {
+function LandmarkModel({model}:{model:typeof models[number]}) {
   const {scene}=useGLTF(`${BASE}${model.file}.glb`);
-  const [hover,setHover]=useState(false);
-  useCursor(hover);
-  return <group position={[...model.position]}
-    onClick={e=>{if(cityJourney.progress>.6&&e.delta<5){e.stopPropagation();onSelect(model.id);}}}
-    onPointerOver={e=>{if(cityJourney.progress>.6){e.stopPropagation();setHover(true);}}}
-    onPointerOut={()=>setHover(false)}>
-    <primitive object={scene} />
-    {(hover||selected===model.id)&&<mesh rotation={[-Math.PI/2,0,0]} position={[0,.05,0]}>
-      <ringGeometry args={[2.3,2.34,64]} /><meshBasicMaterial color="#83e4f2" transparent opacity={.85} toneMapped={false} />
-    </mesh>}
-  </group>;
+  return <primitive object={scene} position={[...model.position]} />;
 }
-export function CityLandmarks({onSelect,selected}:{onSelect:(id:LandmarkId)=>void;selected:LandmarkId|null}) {
-  return <>{models.map(model=><LandmarkModel key={model.id} model={model} onSelect={onSelect} selected={selected} />)}</>;
+export function CityLandmarks() {
+  return <>{models.map(model=><LandmarkModel key={model.id} model={model} />)}</>;
 }
 
 function StreetPart({part,matrices,animated,reduced}:{part:THREE.Mesh;matrices:THREE.Matrix4[];animated:boolean;reduced:boolean}) {

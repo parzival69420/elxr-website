@@ -16,8 +16,6 @@ import { hero } from "@/lib/content";
 import {
   cityJourney,
   signalCityReady,
-  landmarks,
-  type LandmarkId,
   type CityCommand,
   type CityAction,
 } from "@/lib/city";
@@ -53,7 +51,7 @@ export default function Hero() {
   const [stage, setStage] = useState(0);
   const [inView, setInView] = useState(true);
   const [exploring, setExploring] = useState(false);
-  const [selected, setSelected] = useState<LandmarkId | null>(null);
+  const [revealed, setRevealed] = useState(false);
   const [command, setCommand] = useState<CityCommand>({
     id: 0,
     action: "reset",
@@ -70,31 +68,16 @@ export default function Hero() {
         behavior: "instant",
       });
   }, []);
-  const onSelect = useCallback(
-    (id: LandmarkId) => {
-      setSelected(id);
-      onExplore();
-    },
-    [onExplore],
-  );
   const onCameraChange = useCallback((position: string) => {
     if (viewport.current) viewport.current.dataset.camera = position;
   }, []);
   const issueCommand = (action: CityAction) => {
-    if (action === "reset") {
-      setExploring(false);
-      setSelected(null);
-    } else onExplore();
+    if (action === "reset") setExploring(false);
+    else onExplore();
     setCommand((previous) => ({ id: previous.id + 1, action }));
   };
-  const selectedLandmark = landmarks.find(
-    (landmark) => landmark.id === selected,
-  );
   useEffect(() => {
-    if (stage !== 2) {
-      setExploring(false);
-      setSelected(null);
-    }
+    if (stage !== 2) setExploring(false);
   }, [stage]);
   const [motionOverride, setMotionOverride] = useState<boolean | null>(null);
   const reduced = motionOverride ?? settings?.reduced ?? false;
@@ -104,6 +87,32 @@ export default function Hero() {
     setReady(true);
     signalCityReady();
   }, []);
+
+  // Once the scene is ready, the flat map rises into the city; only then does any copy appear.
+  useEffect(() => {
+    if (!ready) return;
+    const finish = () => {
+      cityJourney.reveal = 1;
+      setRevealed(true);
+    };
+    if (!available || reduced) {
+      finish();
+      return;
+    }
+    const tween = gsap.to(cityJourney, {
+      reveal: 1,
+      duration: 2.6,
+      delay: 0.9,
+      ease: "none",
+      onComplete: finish,
+    });
+    return () => {
+      tween.kill();
+    };
+  }, [ready, available, reduced]);
+  useEffect(() => {
+    if (revealed) delete document.documentElement.dataset.cityLoading;
+  }, [revealed]);
 
   useEffect(() => {
     const mobile = window.matchMedia("(max-width: 767px)");
@@ -185,7 +194,7 @@ export default function Hero() {
     >
       <div
         ref={viewport}
-        className={`city-viewport ${ready ? "is-ready" : ""} ${!available ? "scene-fallback" : ""} ${exploring ? "is-exploring" : ""}`}
+        className={`city-viewport ${ready ? "is-ready" : ""} ${!available ? "scene-fallback" : ""} ${exploring ? "is-exploring" : ""} ${revealed ? "is-revealed" : ""}`}
         data-stage="map"
       >
         <div className="city-map-fallback">
@@ -200,10 +209,8 @@ export default function Hero() {
                 active={inView}
                 interactive={stage === 2}
                 exploring={exploring}
-                selected={selected}
                 command={command}
                 onExplore={onExplore}
-                onSelect={onSelect}
                 onCameraChange={onCameraChange}
                 onReady={onReady}
                 onFailure={onFailure}
@@ -259,16 +266,6 @@ export default function Hero() {
             </a>
           </div>
         </div>
-        <div className="city-map-labels" aria-hidden="true">
-          <span className="map-label map-hudson">HUDSON RIVER</span>
-          <span className="map-label map-east">EAST RIVER</span>
-          <span className="map-label map-park">CENTRAL PARK</span>
-          <span className="map-destination">
-            <span className="destination-dot" /> TIMES SQUARE
-          </span>
-          <span className="map-label map-downtown">MIDTOWN MANHATTAN</span>
-        </div>
-
         <div className="city-skyline-copy" aria-hidden={stage !== 2}>
           <h2>
             {hero.headlineLead}
@@ -303,20 +300,9 @@ export default function Hero() {
               aria-label="3D city controls"
             >
               <p className="city-drag-hint">
-                Drag to look around, or pick a landmark.
+                Drag to look around.
               </p>
               <div className="city-tool-row">
-                <div className="city-landmark-buttons">
-                  {landmarks.map((landmark) => (
-                    <button
-                      key={landmark.id}
-                      onClick={() => onSelect(landmark.id)}
-                      aria-pressed={selected === landmark.id}
-                    >
-                      {landmark.label}
-                    </button>
-                  ))}
-                </div>
                 <div className="city-camera-buttons">
                   <button
                     aria-label="Rotate city left"
@@ -351,26 +337,6 @@ export default function Hero() {
                 </div>
               </div>
             </div>
-            {selectedLandmark && (
-              <aside
-                className="city-landmark-card"
-                aria-label={selectedLandmark.label}
-              >
-                <button
-                  className="landmark-close"
-                  onClick={() => setSelected(null)}
-                  aria-label="Close landmark details"
-                >
-                  ×
-                </button>
-                <p className="city-eyebrow">{selectedLandmark.kicker}</p>
-                <h3>{selectedLandmark.label}</h3>
-                <p>{selectedLandmark.description}</p>
-                <a href={selectedLandmark.href}>
-                  {selectedLandmark.cta} <span aria-hidden="true">↗</span>
-                </a>
-              </aside>
-            )}
           </>
         )}
 
