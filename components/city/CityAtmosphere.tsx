@@ -212,7 +212,9 @@ export function CityEffects({
       grade.uniforms.uTime.value += delta;
     }
     if (ao) {
-      ao.enabled = air > 0.01;
+      // Also on for the first frames, under the loading sheet: its shaders compile on first use,
+      // which would otherwise land mid camera flight as a visible freeze.
+      ao.enabled = air > 0.01 || frames.current < 3;
       ao.blendIntensity = air * 0.85;
     }
     composer.render();

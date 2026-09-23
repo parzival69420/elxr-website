@@ -50,6 +50,18 @@ function IntroClock() {
   return null;
 }
 
+/** Calls `onDone` once the intro has finished playing. */
+function IntroDone({ onDone }: { onDone: () => void }) {
+  const done = useRef(false);
+  useFrame(() => {
+    if (!done.current && cityJourney.reveal >= 1 && !cityJourney.intro) {
+      done.current = true;
+      onDone();
+    }
+  });
+  return null;
+}
+
 /** Parts of the city that switch on at a point in the reveal (see Blueprint for the phases). */
 function RevealAt({ from, children }: { from: number; children: ReactNode }) {
   const group = useRef<THREE.Group>(null);
@@ -146,10 +158,12 @@ export default function CityCanvas({
   // shadows, 1.5x; 0 = 1x without MSAA. Phones start at 1: their screens are already dense.
   const [quality, setQuality] = useState(mobile ? 1 : 2);
   const [monitoring, setMonitoring] = useState(false);
+  const [shown, setShown] = useState(false);
   const ready = useCallback(() => {
-    setMonitoring(true);
+    setShown(true);
     onReady();
   }, [onReady]);
+  const introDone = useCallback(() => setMonitoring(true), []);
   const maxDpr = quality === 2 ? 2 : quality === 1 ? 1.5 : 1;
   const msaa = quality === 0 ? 0 : 4;
   return (
@@ -177,7 +191,9 @@ export default function CityCanvas({
       fallback={<span>A stylised night view of Manhattan.</span>}
     >
       <color attach="background" args={["#050719"]} />
-      {/* Judged only once the city is up, so loading-time shader compiles don't count. */}
+      {/* Judged only once the intro has played: a quality drop rebuilds the post-processing
+          chain, which would freeze the camera flight for a frame. */}
+      {shown && !monitoring && <IntroDone onDone={introDone} />}
       {monitoring && (
         <PerformanceMonitor onDecline={() => setQuality((level) => Math.max(0, level - 1))} />
       )}
