@@ -37,7 +37,9 @@
     ".next-bottles-production/types/**/*.ts",
     ".next-agency-check/types/**/*.ts",
     ".next-city-realism/types/**/*.ts",
-    ".next-reveal-check/types/**/*.ts"
+    ".next-reveal-check/types/**/*.ts",
+    ".next-theme-check/types/**/*.ts",
+    ".next-q/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

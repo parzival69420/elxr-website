@@ -7,6 +7,10 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
+import { GradeShader, MistShader } from "./cityPostFX";
+import { styleClock } from "./cityStyle";
 import { cityJourney, random, signalCityReady } from "@/lib/city";
 
 export function CityAtmosphere({ reduced }: { reduced: boolean }) {
@@ -61,10 +65,10 @@ export function CityAtmosphere({ reduced }: { reduced: boolean }) {
           if(uJourney<.01){gl_FragColor=vec4(.001,.002,.004,1.);return;}
           vec4 view=uProjectionInverse*vec4(vUv*2.-1.,1.,1.);
           vec3 ray=normalize((uCameraWorld*vec4(view.xyz,0.)).xyz);
-          vec3 color=vec3(.0007,.0010,.0018);
+          vec3 color=vec3(.004,.004,.018);
           float horizon=exp(-abs(ray.y+.045)*13.);
-          color+=vec3(.008,.010,.016)*horizon;
-          color+=vec3(.014,.002,.005)*horizon*exp(-pow(ray.x*2.,2.));
+          color+=(vec3(.05,.012,.06)*horizon+vec3(.24,.03,.06)*pow(horizon,3.))*(.85+.15*sin(uTime*.45));
+          color+=vec3(.08,.01,.03)*horizon*exp(-pow(ray.x*1.5,2.));
           vec2 wind=vec2(uTime*.005,uTime*.0015);
           vec2 p=ray.xz/(max(ray.y,.07)+.28)*2.6+wind;
           float warp=fbm(p*.48);
@@ -73,10 +77,12 @@ export function CityAtmosphere({ reduced }: { reduced: boolean }) {
           float back=fbm(p*1.7+vec2(17.,8.)-wind*.4);
           float lower=smoothstep(.46,.74,back)*.65*smoothstep(.025,.14,ray.y);
           float edge=max(0.,fbm(p+vec2(.05,.03))-field)*12.;
-          vec3 clouds=vec3(.010,.013,.019)*density+vec3(.017,.021,.03)*edge;
-          clouds+=vec3(.008,.004,.009)*density*horizon;
+          // Night clouds are lit from below: brighter bellies near the horizon, where the city glows.
+          float underlit=exp(-max(ray.y-.05,0.)*5.);
+          vec3 clouds=vec3(.018,.016,.05)*density+vec3(.05,.03,.08)*edge;
+          clouds+=vec3(.09,.015,.06)*density*underlit;
           color=mix(color,color*.4+clouds,smoothstep(.055,.18,ray.y));
-          color=mix(color,color*.45+vec3(.004,.006,.010)*lower,lower*.65);
+          color=mix(color,color*.45+vec3(.03,.012,.05)*lower,lower*.7);
           float journey=smoothstep(.08,.75,uJourney);
           gl_FragColor=vec4(mix(vec3(.001,.002,.004),color,journey),1.);
         }
@@ -96,37 +102,82 @@ export function CityAtmosphere({ reduced }: { reduced: boolean }) {
           depthWrite={false}
         />
       </points>
-      <ambientLight intensity={0.34} color="#72849e" />
+      {/* Indigo ambient, a violet key and a magenta bounce from the street. */}
+      <ambientLight intensity={0.35} color="#3a2d7a" />
       <directionalLight
         position={[-15, 45, 12]}
-        intensity={1.05}
-        color="#91b6d0"
+        intensity={1.1}
+        color="#8a7dff"
       />
+      <hemisphereLight args={["#3b2a8a", "#3a0a2e", 0.5]} />
       <fog attach="fog" args={["#050b15", 45, 165]} />
     </>
   );
 }
 
+/** Meshes that shouldn't write into the AO depth: the sky quad and anything see-through. */
+function hiddenFromAO(object: THREE.Object3D) {
+  if ((object as THREE.Points).isPoints || (object as THREE.Line).isLine) return true;
+  const material = (object as THREE.Mesh).material as THREE.Material | undefined;
+  return !!material && !Array.isArray(material) && (material.transparent || !material.depthTest);
+}
+
 export function CityEffects({
   mobile,
+  reduced,
   onReady,
 }: {
   mobile: boolean;
+  reduced: boolean;
   onReady: () => void;
 }) {
   const { gl, scene, camera, size } = useThree();
-  const composer = useMemo(() => {
-    const value = new EffectComposer(gl);
-    value.addPass(new RenderPass(scene, camera));
-    value.addPass(
-      new UnrealBloomPass(new THREE.Vector2(1, 1), 0.32, 0.35, 0.92),
+  const { composer, mist, ao, grade } = useMemo(() => {
+    // Both ping-pong targets carry depth, so the mist can read the scene's depth at full resolution.
+    const target = new THREE.WebGLRenderTarget(1, 1, {
+      type: THREE.HalfFloatType,
+      depthTexture: new THREE.DepthTexture(1, 1),
+    });
+    const composer = new EffectComposer(gl, target);
+    // A cloned depth texture shares its GPU source, which would sample and write the same texture.
+    composer.renderTarget2.depthTexture = new THREE.DepthTexture(1, 1);
+    composer.addPass(new RenderPass(scene, camera));
+    const mist = new ShaderPass(MistShader);
+    mist.material.depthTest = false;
+    mist.material.depthWrite = false;
+    composer.addPass(mist);
+    // Contact shadows where towers meet the street. Desktop only, at half resolution.
+    let ao: GTAOPass | null = null;
+    if (!mobile) {
+      ao = new GTAOPass(scene, camera, 1, 1);
+      ao.updateGtaoMaterial({ radius: 2.2, distanceFallOff: 1, thickness: 2, scale: 1.3, samples: 12 });
+      ao.updatePdMaterial({ radius: 6, rings: 2, samples: 12 });
+      const pass = ao;
+      const resize = pass.setSize.bind(pass);
+      pass.setSize = (width: number, height: number) => resize(width * 0.5, height * 0.5);
+      // GTAO restores visibility from this same cache afterwards.
+      const cache = (pass as unknown as { _visibilityCache: Map<THREE.Object3D, boolean> })._visibilityCache;
+      pass.overrideVisibility = function () {
+        scene.traverse((object) => {
+          cache.set(object, object.visible);
+          if (hiddenFromAO(object)) object.visible = false;
+        });
+      };
+      composer.addPass(pass);
+    }
+    composer.addPass(
+      new UnrealBloomPass(new THREE.Vector2(1, 1), 0.34, 0.4, 0.9),
     );
-    value.addPass(new OutputPass());
-    return value;
-  }, [gl, scene, camera]);
+    composer.addPass(new OutputPass());
+    const grade = new ShaderPass(GradeShader);
+    composer.addPass(grade);
+    return { composer, mist, ao, grade };
+  }, [gl, scene, camera, mobile]);
   useEffect(() => {
     composer.setSize(size.width, size.height);
-  }, [composer, size, mobile]);
+    const ratio = gl.getPixelRatio();
+    mist.uniforms.uTexel.value.set(1 / (size.width * ratio), 1 / (size.height * ratio));
+  }, [composer, mist, gl, size]);
   useEffect(
     () => () => {
       composer.passes.forEach((pass) => pass.dispose());
@@ -135,7 +186,26 @@ export function CityEffects({
     [composer],
   );
   const frames = useRef(0);
-  useFrame(() => {
+  useFrame((_, delta) => {
+    // The flat loading map stays untouched; atmosphere arrives as the city rises and the camera descends.
+    const rise = THREE.MathUtils.smoothstep(cityJourney.reveal, 0.2, 1);
+    const air = THREE.MathUtils.smoothstep(cityJourney.progress, 0.15, 0.85);
+    const u = mist.uniforms;
+    u.tDepth.value = composer.readBuffer.depthTexture;
+    u.uProjectionInverse.value.copy(camera.projectionMatrixInverse);
+    u.uCameraWorld.value.copy(camera.matrixWorld);
+    u.uCameraPosition.value.copy(camera.position);
+    u.uStrength.value = air;
+    grade.uniforms.uStrength.value = rise;
+    if (!reduced) {
+      styleClock.value += Math.min(delta, 0.06);
+      u.uTime.value += Math.min(delta, 0.06);
+      grade.uniforms.uTime.value += delta;
+    }
+    if (ao) {
+      ao.enabled = air > 0.01;
+      ao.blendIntensity = air * 0.85;
+    }
     composer.render();
     if (++frames.current === 2) {
       signalCityReady();

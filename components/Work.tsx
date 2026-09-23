@@ -1,22 +1,28 @@
 import { bottles, work } from "@/lib/content";
+import { bottleColors } from "@/lib/bottles";
 
 /** Selected work: flagship cases, each figure shown with its constraint and mechanism. */
 export default function Work() {
   return (
-    <section id="work" className="work-section relative z-10">
+    <section id="work" className="work-section theme-split relative z-10">
+      <span className="ghost-word" aria-hidden="true">
+        Work
+      </span>
+      <div className="theme-wrap">
       <header className="work-heading">
-        <h2>{work.heading}</h2>
+        <h2 className="theme-display">{work.heading}</h2>
         <p>{work.subline}</p>
       </header>
 
       <ol className="work-list">
         {work.cases.map((c) => {
-          const bottle = bottles.find((b) => b.id === c.service);
+          const index = bottles.findIndex((b) => b.id === c.service);
+          const bottle = bottles[index];
           return (
             <li
               key={c.title}
               className="work-case"
-              style={{ "--case-color": bottle?.liquidColor } as React.CSSProperties}
+              style={{ "--case-color": bottleColors[index] } as React.CSSProperties}
             >
               <div className="work-figure" aria-hidden="true">
                 <span>{c.figure}</span>
@@ -55,9 +61,11 @@ export default function Work() {
         })}
       </ol>
 
-      <a href={work.cta.href} className="btn-secondary work-cta">
+      <a href={work.cta.href} className="cta-bar work-cta">
+        <span aria-hidden="true" />
         {work.cta.label}
       </a>
+      </div>
     </section>
   );
 }

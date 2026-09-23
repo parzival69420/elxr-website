@@ -1,0 +1,980 @@
+/* ==========================================================================
+   Showcase theme
+   Every section is built from the same few moves: a slate split panel, a
+   cream display heading, an oversized ghost word behind it, offset caption
+   tiles, one accent ring, and an accent-bar call to action. The bottle
+   scenes are the fullest expression; everything else is a quieter echo.
+   Loaded after globals.css, so it wins ties.
+   ========================================================================== */
+
+body {
+  background-color: var(--slate-deep);
+}
+
+/* ---------- Building blocks ---------- */
+.theme-split {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(
+    90deg,
+    var(--slate-deep) 0 50%,
+    var(--slate) 50% 100%
+  );
+}
+.theme-wrap {
+  position: relative;
+  z-index: 1;
+  width: min(1200px, calc(100% - 96px));
+  margin-inline: auto;
+}
+.ghost-word {
+  position: absolute;
+  z-index: 0;
+  top: clamp(20px, 3vw, 48px);
+  left: 50%;
+  font-size: clamp(120px, 16vw, 290px);
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+  color: var(--ghost);
+  pointer-events: none;
+  user-select: none;
+}
+.theme-display {
+  color: var(--cream);
+  font-size: clamp(44px, 5.2vw, 86px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+.theme-tile {
+  background: var(--slate-tile);
+  padding: clamp(24px, 2.6vw, 40px);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.theme-tile h3,
+.theme-tile h4 {
+  margin-bottom: 10px;
+  color: var(--cream);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+.theme-ring {
+  position: absolute;
+  z-index: 0;
+  width: clamp(120px, 14vw, 230px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: clamp(12px, 1.35vw, 22px) solid var(--accent, var(--purple));
+  pointer-events: none;
+}
+.cta-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 44px;
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.cta-bar > span {
+  display: block;
+  width: 72px;
+  height: 4px;
+  background: var(--accent, var(--purple));
+  transition: width 0.3s ease;
+}
+.cta-bar:hover > span {
+  width: 104px;
+}
+.round-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-top: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--scene-accent, var(--accent, var(--purple)));
+  color: var(--cream);
+  font-size: 20px;
+  transition: background 0.2s;
+}
+.round-link:hover {
+  background: rgba(241, 228, 203, 0.08);
+}
+
+/* ---------- Controls: flat, squared, one accent fill ---------- */
+.btn-primary,
+.nav-contact,
+.contact-submit {
+  background: var(--purple);
+  color: #fff;
+  border-radius: 3px;
+  box-shadow: none;
+}
+.btn-primary:hover,
+.nav-contact:hover,
+.contact-submit:hover {
+  background: #8250ef;
+  box-shadow: none;
+}
+.btn-secondary,
+.metric-tile,
+.contact-form,
+.scroll-arrow,
+.menu-toggle,
+.site-header .city-nav {
+  background: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.btn-secondary::before,
+.metric-tile::before,
+.contact-form::before,
+.scroll-arrow::before,
+.menu-toggle::before,
+.site-header .city-nav::before {
+  display: none;
+}
+.btn-secondary {
+  border: 1px solid rgba(241, 228, 203, 0.32);
+  border-radius: 3px;
+  color: var(--cream);
+}
+.btn-secondary:hover {
+  border-color: var(--cream);
+}
+.scroll-arrow,
+.menu-toggle {
+  border: 1px solid rgba(241, 228, 203, 0.28);
+}
+.site-header .city-nav {
+  border-radius: 0;
+  border-bottom: 1px solid rgba(241, 228, 203, 0.08);
+}
+.site-header.is-past-hero {
+  background: rgba(18, 20, 25, 0.95);
+  backdrop-filter: none;
+}
+.elxr-wordmark,
+.city-skyline-copy h2,
+.city-intro-title {
+  color: var(--cream);
+}
+
+/* ---------- Thesis ---------- */
+section.thesis-section.theme-split {
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: clamp(110px, 12vw, 170px) 0;
+}
+.thesis-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 72px;
+  align-items: end;
+}
+.thesis-grid .theme-display {
+  font-size: clamp(38px, 4.2vw, 66px);
+}
+.thesis-tile {
+  margin-right: calc((100vw - min(1200px, 100vw - 96px)) / -2);
+  padding-right: calc((100vw - min(1200px, 100vw - 96px)) / 2 + 40px);
+  font-size: 17px;
+}
+
+/* Numbers strip and work figures: see "Bento cards" below. */
+
+/* ---------- The menu: intro screen ---------- */
+.menu {
+  scroll-margin-top: 0;
+}
+.menu-intro {
+  display: flex;
+  align-items: center;
+  min-height: 100svh;
+  padding-block: 140px 100px;
+}
+.menu-intro-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 56px 72px;
+  align-items: end;
+}
+.menu-intro-grid .theme-display {
+  font-size: clamp(56px, 7.6vw, 128px);
+}
+.menu-intro-tile {
+  margin-right: calc((100vw - min(1200px, 100vw - 96px)) / -2);
+  padding-right: calc((100vw - min(1200px, 100vw - 96px)) / 2 + 40px);
+}
+.menu-intro-cta {
+  grid-column: 1 / -1;
+  margin-left: calc((100vw - min(1200px, 100vw - 96px)) / -2);
+}
+.menu-intro-cta > span {
+  width: calc((100vw - min(1200px, 100vw - 96px)) / 2 - 18px);
+  min-width: 48px;
+}
+.menu-intro-cta:hover > span {
+  width: calc((100vw - min(1200px, 100vw - 96px)) / 2 + 14px);
+}
+.menu-intro-ring {
+  top: 24%;
+  left: calc(50% + 6vw);
+}
+
+/* ---------- The menu: pinned bottle scenes ---------- */
+.menu-stage {
+  position: relative;
+  --gutter: clamp(24px, 7vw, 120px);
+}
+.menu-panels,
+.menu-ghosts,
+.menu-canvas {
+  position: absolute;
+  inset: 0;
+}
+.menu-panels {
+  background: linear-gradient(
+    90deg,
+    var(--slate-deep) 0 50%,
+    var(--slate) 50% 100%
+  );
+}
+.menu-ghosts {
+  overflow: hidden;
+}
+.menu-ghost {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  font-size: clamp(110px, 14vw, 250px);
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+  color: var(--ghost);
+  transform: translateX(calc(var(--e, 0) * -22vw));
+}
+.menu-ring {
+  top: 21%;
+  left: calc(50% + 3vw);
+  width: clamp(150px, 15vw, 250px);
+  border-color: var(--accent);
+  transform: scale(calc(1 - var(--ring, 0) * 0.4)) rotate(calc(var(--ring, 0) * 90deg));
+  transition: border-color 0.5s ease;
+}
+.menu-canvas {
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.menu-stage.is-ready .menu-canvas {
+  opacity: 1;
+}
+.menu-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.menu-scene > * {
+  pointer-events: auto;
+}
+.menu-scene-index {
+  position: absolute;
+  top: 128px;
+  left: var(--gutter);
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 600;
+}
+.menu-scene-index span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.menu-scene-title {
+  position: absolute;
+  top: 29%;
+  left: var(--gutter);
+  width: min(33vw, 520px);
+  transform: translateY(calc(var(--e, 0) * -70px));
+}
+.menu-scene-title .theme-display {
+  font-size: clamp(46px, 4.8vw, 84px);
+}
+.menu-scene-title p {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 18px;
+}
+.menu-tile-left,
+.menu-tile-right {
+  position: absolute;
+  bottom: 19%;
+  transform: translateY(calc(var(--e, 0) * 50px));
+}
+.menu-tile-left {
+  left: 0;
+  width: calc(var(--gutter) + 270px);
+  padding-left: var(--gutter);
+}
+.menu-tile-left ul {
+  display: grid;
+  gap: 2px;
+}
+.menu-tile-right {
+  right: 0;
+  width: calc(var(--gutter) + 300px);
+  padding-right: var(--gutter);
+  background: var(--slate-deep);
+}
+.menu-tile-right p {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.menu-scene-cta {
+  position: absolute;
+  bottom: 7%;
+  left: 0;
+}
+.menu-scene .cta-bar > span {
+  width: calc(var(--gutter) - 18px);
+  background: var(--scene-accent);
+}
+.menu-scene .cta-bar:hover > span {
+  width: calc(var(--gutter) + 14px);
+}
+.menu-scene .btn-primary.menu-scene-cta {
+  left: var(--gutter);
+  min-height: 48px;
+  padding: 0 24px;
+}
+.menu-chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.menu-chrome > * {
+  pointer-events: auto;
+}
+.menu-progress {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 7%;
+  display: flex;
+  gap: 8px;
+}
+.menu-progress button {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 24px;
+}
+.menu-progress button::before,
+.menu-progress button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  background: rgba(241, 228, 203, 0.16);
+}
+.menu-progress button::after {
+  background: var(--accent);
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left;
+}
+.menu-next {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--gutter) - 12px);
+  width: 48px;
+  height: 48px;
+  color: var(--cream);
+  font-size: 30px;
+  transform: translateY(-50%);
+  transition: transform 0.2s;
+}
+.menu-next:hover {
+  transform: translate(6px, -50%);
+}
+
+/* Pinned only when JavaScript is running; otherwise each scene is a plain panel. */
+html.js .menu-track {
+  height: calc(var(--scene-count) * var(--scene-length) * 100svh);
+}
+html.js .menu-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+html:not(.js) .menu-ghosts,
+html:not(.js) .menu-ring,
+html:not(.js) .menu-canvas,
+html:not(.js) .menu-chrome,
+html:not(.js) .menu-panels {
+  display: none;
+}
+html:not(.js) .menu-scene {
+  position: relative;
+  display: grid;
+  gap: 24px;
+  padding: 96px 8vw;
+  background: var(--slate-deep);
+}
+html:not(.js) .menu-scene:nth-of-type(even) {
+  background: var(--slate);
+}
+html:not(.js) .menu-scene > * {
+  position: static;
+  width: auto;
+  transform: none;
+}
+
+/* ---------- Formula index ---------- */
+section.service-index.theme-split {
+  width: auto;
+  margin: 0;
+  padding: clamp(110px, 11vw, 160px) 0;
+}
+.service-index .service-index-heading {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+.service-index .service-index-heading p {
+  max-width: 22rem;
+  color: var(--muted);
+  font-size: 16px;
+}
+.service-disclosure,
+.service-disclosure:last-child {
+  border-color: rgba(241, 228, 203, 0.1);
+}
+.service-disclosure h3 {
+  color: var(--cream);
+  font-weight: 600;
+}
+.service-toggle {
+  color: var(--cream);
+}
+.service-proof blockquote {
+  border-left: 4px solid var(--purple);
+  background: var(--slate-tile);
+  padding: 20px 24px;
+}
+.service-proof .service-stat {
+  color: var(--cream);
+}
+
+/* ---------- Selected work ---------- */
+section.work-section.theme-split {
+  width: auto;
+  margin: 0;
+  padding: clamp(110px, 11vw, 160px) 0;
+}
+.work-case {
+  border-top-color: rgba(241, 228, 203, 0.1);
+}
+.work-body h3 {
+  color: var(--cream);
+  font-weight: 600;
+}
+.work-meta a {
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--purple);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+.work-cta {
+  margin-top: 64px;
+}
+
+/* ---------- Manifesto ---------- */
+section.manifesto-section.theme-split {
+  padding: clamp(130px, 14vw, 200px) 0;
+}
+.manifesto-inner {
+  text-align: left;
+}
+.manifesto-inner .theme-display {
+  max-width: 13ch;
+  font-size: clamp(52px, 7vw, 116px);
+  line-height: 0.98;
+}
+.manifesto-inner p {
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 18px;
+}
+.manifesto-ring {
+  top: 50%;
+  left: 62%;
+  width: clamp(200px, 24vw, 380px);
+  border-width: clamp(18px, 2vw, 32px);
+  transform: translateY(-50%);
+}
+
+/* ---------- About & FAQ ---------- */
+section.about-section.theme-split,
+section.faq-section.theme-split {
+  display: block;
+  width: auto;
+  margin: 0;
+  border-top: 0;
+  padding: clamp(110px, 11vw, 160px) 0;
+}
+.theme-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 80px;
+  align-items: start;
+}
+.about-lead {
+  margin-top: 32px;
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1.6;
+}
+.about-section .about-copy {
+  font-size: 15px;
+  line-height: 1.85;
+}
+.about-section .about-copy p + p {
+  margin-top: 20px;
+}
+.about-section .about-copy .about-signoff {
+  color: var(--cream);
+  font-weight: 600;
+}
+.faq-item,
+.faq-item:first-child {
+  border-color: rgba(241, 228, 203, 0.1);
+}
+.faq-item summary {
+  color: var(--cream);
+}
+.faq-item summary > span:last-child {
+  color: var(--cream);
+}
+.faq-item > p {
+  color: var(--muted);
+}
+
+/* ---------- Contact ---------- */
+section.contact-section.theme-split {
+  padding: clamp(120px, 12vw, 170px) 0;
+}
+.contact-layout.theme-wrap {
+  width: min(1200px, calc(100% - 96px));
+}
+.contact-ring {
+  top: 16%;
+  left: calc(50% - 5vw);
+  width: clamp(110px, 11vw, 180px);
+}
+.contact-form.theme-tile {
+  border-radius: 0;
+  background: var(--slate-tile);
+  padding: clamp(28px, 3vw, 44px);
+}
+.contact-form input,
+.contact-form textarea {
+  background: var(--slate-deep);
+  border-bottom-color: rgba(241, 228, 203, 0.2);
+}
+.contact-form label {
+  color: var(--cream);
+}
+
+/* ---------- Footer ---------- */
+.footer-tagline {
+  color: var(--cream);
+  font-weight: 700;
+}
+.footer-email {
+  color: var(--cream);
+  text-decoration: underline;
+  text-decoration-color: var(--purple);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+.footer-wordmark {
+  background: none;
+  color: var(--ghost);
+  -webkit-text-fill-color: var(--ghost);
+}
+
+/* ---------- Phones: panels stack, the bottle sits above the copy ---------- */
+@media (max-width: 900px) {
+  .theme-split {
+    background: var(--slate-deep);
+  }
+  .theme-wrap,
+  .contact-layout.theme-wrap {
+    width: calc(100% - 40px);
+  }
+  .ghost-word {
+    left: 20px;
+    font-size: 30vw;
+  }
+  .thesis-grid,
+  .theme-two-col,
+  .menu-intro-grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .thesis-tile,
+  .menu-intro-tile {
+    margin-right: -20px;
+    padding-right: 28px;
+  }
+  .menu-intro-cta {
+    margin-left: -20px;
+  }
+  .menu-intro-cta > span {
+    width: 40px;
+  }
+  .service-index .service-index-heading {
+    grid-template-columns: 1fr;
+  }
+  .manifesto-ring {
+    left: 55%;
+    top: 22%;
+  }
+}
+@media (max-width: 760px) {
+  .menu-stage {
+    --gutter: 22px;
+  }
+  .menu-panels {
+    background: linear-gradient(
+      180deg,
+      var(--slate) 0 52%,
+      var(--slate-deep) 52% 100%
+    );
+  }
+  .menu-ghost {
+    top: 13%;
+    left: 22px;
+    font-size: 26vw;
+  }
+  .menu-ring {
+    top: 16%;
+    left: 50%;
+    width: 34vw;
+    margin-left: 4vw;
+    border-width: 11px;
+  }
+  .menu-scene-index {
+    top: 96px;
+  }
+  .menu-scene-title {
+    top: 56%;
+    width: calc(100% - 44px);
+  }
+  .menu-scene-title .theme-display {
+    font-size: clamp(34px, 10vw, 46px);
+  }
+  .menu-scene-title p {
+    margin-top: 10px;
+    font-size: 16px;
+  }
+  .menu-tile-left,
+  .menu-tile-right,
+  .menu-next {
+    display: none;
+  }
+  .menu-scene-cta {
+    bottom: 12%;
+  }
+  .menu-progress {
+    bottom: calc(12% - 70px);
+    right: auto;
+    left: var(--gutter);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-canvas,
+  .menu-ring,
+  .cta-bar > span,
+  .menu-next {
+    transition: none;
+  }
+}
+
+/* Glass leftovers: squared surfaces keep squared focus rings. */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.nav-contact:focus-visible,
+.cta-bar:focus-visible {
+  border-radius: 3px;
+}
+.round-link:focus-visible,
+.menu-toggle:focus-visible,
+.scroll-arrow:focus-visible {
+  border-radius: 50%;
+}
+@media (max-width: 760px) {
+  .menu-scene .cta-bar.menu-scene-cta {
+    left: var(--gutter);
+  }
+  .menu-scene .cta-bar > span,
+  .menu-scene .cta-bar:hover > span {
+    width: 40px;
+  }
+}
+
+/* ---------- Bento cards ----------
+   A spec sheet on a card: index and tag across the top, the figure boxed in a
+   ruled frame, a serial line, a barcode and three fill-level dots (empty, half,
+   full: a pour) along the bottom. Three fills from the theme: cream, silver and
+   slate. Each card sets its own ink, line and accent colours. */
+.bento-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1fr 1fr;
+  gap: 14px;
+}
+.bento-card {
+  --ink: var(--cream);
+  --ink-soft: var(--muted);
+  --line: rgba(241, 228, 203, 0.22);
+  --bento-accent: var(--lavender);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 260px;
+  padding: clamp(18px, 1.8vw, 26px);
+  border-radius: 28px;
+  background: var(--slate-tile);
+  color: var(--ink);
+}
+.bento-grid > .bento-card:nth-child(1) {
+  --ink: var(--slate-deep);
+  --ink-soft: rgba(18, 20, 25, 0.72);
+  --line: rgba(18, 20, 25, 0.55);
+  --bento-accent: rgba(18, 20, 25, 0.6);
+  grid-row: 1 / 3;
+  background: var(--cream);
+}
+.bento-grid > .bento-card:nth-child(2) {
+  grid-column: 2 / 4;
+}
+.bento-grid > .bento-card:nth-child(3) {
+  --ink: var(--slate-deep);
+  --ink-soft: #262a32;
+  --line: rgba(18, 20, 25, 0.5);
+  --bento-accent: rgba(18, 20, 25, 0.66);
+  background: var(--silver);
+}
+.bento-grid > .bento-card:nth-child(4) {
+  background: var(--slate);
+  box-shadow: inset 0 0 0 1px rgba(241, 228, 203, 0.08);
+}
+
+.bento-head,
+.bento-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.bento-index {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.bento-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.bento-arrow {
+  width: clamp(26px, 2.6vw, 38px);
+  height: auto;
+  margin-left: auto;
+  fill: currentColor;
+}
+.bento-grid > .bento-card:nth-child(2) .bento-arrow {
+  width: clamp(40px, 4.6vw, 68px);
+}
+
+.bento-frame {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+}
+.bento-value {
+  padding: 18px 20px 14px;
+  font-size: clamp(44px, 4.6vw, 72px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+.bento-suffix {
+  color: var(--bento-accent);
+}
+.bento-caption {
+  padding: 12px 20px 14px;
+  border-top: 1.5px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+/* The tall card: one giant numeral, its unit set small underneath. */
+.bento-grid > .bento-card:nth-child(1) .bento-value {
+  font-size: clamp(120px, 14vw, 210px);
+  line-height: 0.8;
+}
+.bento-grid > .bento-card:nth-child(1) .bento-suffix {
+  display: block;
+  margin-top: 14px;
+  font-size: 0.24em;
+  letter-spacing: -0.02em;
+}
+
+.bento-serial {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+  color: var(--ink-soft);
+}
+.bento-barcode {
+  flex: 1;
+  max-width: 96px;
+  height: 16px;
+  opacity: 0.7;
+  background: linear-gradient(
+    90deg,
+    currentColor 0 4%, transparent 4% 8%, currentColor 8% 10%, transparent 10% 15%,
+    currentColor 15% 22%, transparent 22% 25%, currentColor 25% 27%, transparent 27% 33%,
+    currentColor 33% 36%, transparent 36% 38%, currentColor 38% 46%, transparent 46% 50%,
+    currentColor 50% 52%, transparent 52% 57%, currentColor 57% 62%, transparent 62% 65%,
+    currentColor 65% 67%, transparent 67% 72%, currentColor 72% 80%, transparent 80% 83%,
+    currentColor 83% 85%, transparent 85% 90%, currentColor 90% 96%, transparent 96% 98%,
+    currentColor 98% 100%
+  );
+}
+.bento-levels {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+.bento-levels i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+.bento-levels i:nth-child(2) {
+  background: linear-gradient(0deg, currentColor 50%, transparent 50%);
+}
+.bento-levels i:nth-child(3) {
+  background: currentColor;
+}
+
+/* Selected work: the case figure is a bento card tinted with its formula. */
+.work-bento {
+  --bento-accent: var(--case-color);
+  min-height: 340px;
+}
+.work-bento .bento-value {
+  font-size: clamp(72px, 8vw, 124px);
+}
+.work-bento .bento-levels i:nth-child(n + 2) {
+  border-color: var(--case-color);
+}
+.work-bento .bento-levels i:nth-child(2) {
+  background: linear-gradient(0deg, var(--case-color) 50%, transparent 50%);
+}
+.work-bento .bento-levels i:nth-child(3) {
+  background: var(--case-color);
+}
+
+@media (max-width: 900px) {
+  .bento-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .bento-grid > .bento-card:nth-child(1),
+  .bento-grid > .bento-card:nth-child(2) {
+    grid-row: auto;
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 560px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+  .bento-card {
+    min-height: 220px;
+    border-radius: 24px;
+  }
+  .bento-grid > .bento-card:nth-child(1) .bento-value {
+    font-size: 120px;
+  }
+}
+
+/* The spot the bottles stand on: a pool of the formula's colour for the contact shadow to sit in. */
+.menu-floor {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 78.5%;
+  width: clamp(360px, 38vw, 640px);
+  height: clamp(70px, 8vw, 130px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, color-mix(in srgb, var(--accent) 26%, transparent), transparent),
+    radial-gradient(closest-side, rgba(241, 228, 203, 0.05), transparent);
+  opacity: calc(1 - var(--ring, 0) * 0.85);
+  transition: background 0.5s ease;
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  .menu-floor {
+    top: 49%;
+    width: 80vw;
+    height: 70px;
+  }
+}
+html:not(.js) .menu-floor {
+  display: none;
+}
+@media (min-width: 761px) {
+  .menu-scene-title {
+    width: min(29vw, 480px);
+  }
+  .menu-scene-title .theme-display {
+    font-size: clamp(44px, 4.3vw, 76px);
+  }
+}

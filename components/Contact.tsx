@@ -27,12 +27,15 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="contact-section relative z-10">
+    <section id="contact" className="contact-section theme-split relative z-10">
       <span id="book" aria-hidden="true" />
-      <div className="contact-layout">
+      <span className="ghost-word" aria-hidden="true">
+        Thirsty
+      </span>
+      <span className="theme-ring contact-ring" aria-hidden="true" />
+      <div className="contact-layout theme-wrap">
         <div className="contact-intro">
-          <p className="section-kicker">{contact.eyebrow}</p>
-          <h2 className="contact-heading">{contact.heading}</h2>
+          <h2 className="contact-heading theme-display">{contact.heading}</h2>
           <p className="mt-5 max-w-xl text-lg text-text/75">{contact.body}</p>
 
           <div className="mt-8 flex flex-wrap items-center gap-5">
@@ -41,7 +44,7 @@ export default function Contact() {
             </a>
             <a
               href={`mailto:${contact.email}`}
-              className="font-medium text-lavender underline-offset-4 hover:underline"
+              className="font-medium text-text underline underline-offset-4 decoration-white/30 hover:underline"
             >
               {contact.email}
             </a>
@@ -51,7 +54,7 @@ export default function Contact() {
         </div>
         <form
           onSubmit={onSubmit}
-          className="contact-form grid gap-6 md:grid-cols-2"
+          className="contact-form theme-tile grid gap-6 md:grid-cols-2"
         >
           <label className="flex flex-col gap-2 text-sm font-medium">
             {contact.form.fields.name}
@@ -102,7 +105,7 @@ export default function Contact() {
               className="mt-4 text-sm font-medium"
             >
               {status === "success" && (
-                <span className="text-lavender">{contact.form.success}</span>
+                <span className="text-text">{contact.form.success}</span>
               )}
               {status === "error" && (
                 <span className="text-butter">{contact.form.error}</span>

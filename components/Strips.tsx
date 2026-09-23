@@ -1,4 +1,5 @@
 import { strips } from "@/lib/content";
+import BentoCard from "@/components/BentoCard";
 
 export default function Strips() {
   return (
@@ -28,18 +29,17 @@ export default function Strips() {
         </div>
       </div>
 
-      {/* numbers strip — glass tiles */}
-      <div className="metric-grid mx-auto grid w-[min(72rem,calc(100%-3rem))] grid-cols-2 gap-4 lg:grid-cols-4">
-        {strips.numbers.map((n) => (
-          <div
+      {/* numbers strip — spec-sheet bento */}
+      <div className="bento-grid mx-auto w-[min(72rem,calc(100%-3rem))]">
+        {strips.numbers.map((n, i) => (
+          <BentoCard
             key={n.value}
-            className="metric-tile flex flex-col gap-2 p-6 md:p-8"
-          >
-            <span className="text-3xl font-medium tracking-tight text-text md:text-5xl">
-              {n.value}
-            </span>
-            <span className="text-sm text-text/65">{n.caption}</span>
-          </div>
+            index={i + 1}
+            total={strips.numbers.length}
+            tag={n.tag}
+            value={n.value}
+            caption={n.caption}
+          />
         ))}
       </div>
 

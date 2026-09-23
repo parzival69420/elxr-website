@@ -1,21 +1,24 @@
 import { about } from "@/lib/content";
 
 export default function About() {
+  const [lead, ...rest] = about.paragraphs;
+  const signoff = rest.pop();
   return (
-    <section id="about" className="about-section relative z-10">
-      <div>
-        <p className="section-kicker">{about.eyebrow}</p>
-        <h2>{about.heading}</h2>
-      </div>
-      <div className="about-copy">
-        {about.paragraphs.map((p, i) => (
-          <p
-            key={i}
-            className={i === about.paragraphs.length - 1 ? "about-signoff" : ""}
-          >
-            {p}
-          </p>
-        ))}
+    <section id="about" className="about-section theme-split relative z-10">
+      <span className="ghost-word" aria-hidden="true">
+        Distillery
+      </span>
+      <div className="theme-wrap theme-two-col">
+        <div>
+          <h2 className="theme-display">{about.heading}</h2>
+          <p className="about-lead">{lead}</p>
+        </div>
+        <div className="theme-tile about-copy">
+          {rest.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+          <p className="about-signoff">{signoff}</p>
+        </div>
       </div>
     </section>
   );

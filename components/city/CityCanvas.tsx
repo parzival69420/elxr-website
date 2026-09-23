@@ -19,9 +19,19 @@ import { Ground, Broadway, Plaza, Traffic } from "./CityGeometry";
 import CentralPark from "./CentralPark";
 import { CityBuildings, CityEnvironment, CityLandmarks, CityStreetLife } from "./CityArchitecture";
 import CityBillboards from "./CityBillboards";
+import { BoroughGlow, Chrysler, DistantLights, FloatingLights, LandmarkLights, Steam } from "./CityExtras";
 import { CityAtmosphere, CityEffects } from "./CityAtmosphere";
 
-const CITY_TARGET = new THREE.Vector3(-2, 8, -3);
+// The resting shot: from above lower Manhattan, looking level up Broadway toward Times Square
+// and Midtown. The camera sits a little above the look target, so the skyline fills the lower
+// part of the frame and the headline sits over open sky.
+const CITY_TARGET = new THREE.Vector3(-2, 17, -24);
+const CITY_HEADING = -0.02;
+
+// Model downloads go through three's default manager; the loading screen reads this.
+THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
+  if (total) cityJourney.load = Math.max(cityJourney.load, loaded / total);
+};
 const REVEAL_TILT = 0.42;
 const REVEAL_TURN = 0.18;
 const easeReveal = (value: number) => 1 - Math.pow(1 - value, 3);
@@ -68,16 +78,16 @@ function CameraRig({
     // Before the reveal finishes, the camera sits closer: the zoomed-in loading map.
     const settle = THREE.MathUtils.lerp(1 / LOAD_ZOOM, 1, easeReveal(cityJourney.reveal));
     const radius =
-      THREE.MathUtils.lerp(mapRadius, size.width < 768 ? 54 : 49, t) *
+      THREE.MathUtils.lerp(mapRadius, size.width < 768 ? 66 : 58, t) *
       THREE.MathUtils.lerp(settle, 1, t);
     const centerX = THREE.MathUtils.lerp(MAP_CENTER.x, CITY_TARGET.x, t);
     // The reveal tilts the flat map into an aerial and turns it slightly, so the rising city reads.
     const rise = easeReveal(cityJourney.reveal);
-    const angle = THREE.MathUtils.lerp(0.006 + REVEAL_TILT * rise, 1.14, t);
+    const angle = THREE.MathUtils.lerp(0.006 + REVEAL_TILT * rise, 1.12, t);
     const azimuth = THREE.MathUtils.lerp(MAP_ROTATION + REVEAL_TURN * rise, -0.02, t);
     const z = THREE.MathUtils.lerp(MAP_CENTER.z, CITY_TARGET.z, t);
     // The camera leans back toward the bottom of the screen, so the aerial reads upright.
-    const heading = THREE.MathUtils.lerp(-(MAP_ROTATION + REVEAL_TURN * rise), -0.02, t);
+    const heading = THREE.MathUtils.lerp(-(MAP_ROTATION + REVEAL_TURN * rise), CITY_HEADING, t);
     camera.position.set(
       centerX + Math.sin(heading) * Math.sin(angle) * radius,
       Math.cos(angle) * radius + 2,
@@ -88,6 +98,13 @@ function CameraRig({
       .set(Math.sin(azimuth) * (1 - t), t, -Math.cos(azimuth) * (1 - t))
       .normalize();
     camera.lookAt(target);
+    // A longer lens at the skyline: the city spans the full width and stays low in the frame.
+    const perspective = camera as THREE.PerspectiveCamera;
+    const fov = THREE.MathUtils.lerp(48, size.width < 768 ? 42 : 34, t);
+    if (Math.abs(perspective.fov - fov) > 0.01) {
+      perspective.fov = fov;
+      perspective.updateProjectionMatrix();
+    }
   });
   return null;
 }
@@ -123,7 +140,7 @@ function CityInteraction({
       if (action === "zoom-in") sphere.radius *= 0.86;
       if (action === "zoom-out") sphere.radius *= 1.16;
       sphere.radius = THREE.MathUtils.clamp(sphere.radius, 10, 70);
-      sphere.phi = THREE.MathUtils.clamp(sphere.phi, 0.42, 1.42);
+      sphere.phi = THREE.MathUtils.clamp(sphere.phi, 0.42, 1.45);
       camera.position
         .copy(pivot)
         .add(new THREE.Vector3().setFromSpherical(sphere));
@@ -187,7 +204,7 @@ function CityInteraction({
       dampingFactor={0.085}
       rotateSpeed={0.45}
       minPolarAngle={0.42}
-      maxPolarAngle={1.42}
+      maxPolarAngle={1.45}
       onStart={onExplore}
       touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.ROTATE }}
     />
@@ -227,7 +244,7 @@ export default function CityCanvas({
         alpha: false,
         powerPreference: "high-performance",
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.05,
+        toneMappingExposure: 1.3,
       }}
       style={{
         position: "absolute",
@@ -266,8 +283,14 @@ export default function CityCanvas({
           <CityBillboards reduced={reduced} />
           <Traffic reduced={reduced} />
           <CityStreetLife reduced={reduced} mobile={mobile} />
+          <Chrysler reduced={reduced} />
+          <LandmarkLights reduced={reduced} />
+          <Steam reduced={reduced} />
+          <FloatingLights mobile={mobile} reduced={reduced} />
+          <BoroughGlow />
+          <DistantLights mobile={mobile} reduced={reduced} />
         </Reveal>
-        <CityEffects mobile={mobile} onReady={onReady} />
+        <CityEffects mobile={mobile} reduced={reduced} onReady={onReady} />
       </Suspense>
     </Canvas>
   );

@@ -4,12 +4,16 @@ import { bottles, servicesIntro } from "@/lib/content";
 export default function ServiceDetails() {
   return (
     <section
-      className="service-index relative z-10"
-      aria-label="Service details and results"
+      id="formula-index"
+      className="service-index theme-split relative z-10"
+      aria-labelledby="formula-index-heading"
     >
+      <div className="theme-wrap">
       <div className="service-index-heading">
-        <p className="section-kicker">{servicesIntro.index}</p>
-        <span>{servicesIntro.indexCue}</span>
+        <h2 id="formula-index-heading" className="theme-display">
+          Every formula, in full.
+        </h2>
+        <p>{servicesIntro.indexCue}</p>
       </div>
       {bottles.map((b, idx) => (
         <details
@@ -54,6 +58,7 @@ export default function ServiceDetails() {
           </div>
         </details>
       ))}
+      </div>
     </section>
   );
 }

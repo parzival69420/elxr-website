@@ -3,6 +3,7 @@
 import "@/lib/rafFallback";
 import {
   Component,
+  type CSSProperties,
   type ReactNode,
   useCallback,
   useEffect,
@@ -11,7 +12,6 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { hero } from "@/lib/content";
 import {
   cityJourney,
@@ -58,15 +58,7 @@ export default function Hero() {
   });
   const onExplore = useCallback(() => {
     setExploring(true);
-    const hero = section.current;
-    if (hero)
-      window.scrollTo({
-        top:
-          hero.getBoundingClientRect().top +
-          window.scrollY +
-          (hero.offsetHeight - window.innerHeight) * 0.92,
-        behavior: "instant",
-      });
+    section.current?.scrollIntoView({ behavior: "instant" });
   }, []);
   const onCameraChange = useCallback((position: string) => {
     if (viewport.current) viewport.current.dataset.camera = position;
@@ -79,8 +71,7 @@ export default function Hero() {
   useEffect(() => {
     if (stage !== 2) setExploring(false);
   }, [stage]);
-  const [motionOverride, setMotionOverride] = useState<boolean | null>(null);
-  const reduced = motionOverride ?? settings?.reduced ?? false;
+  const reduced = settings?.reduced ?? false;
   const onReady = useCallback(() => setReady(true), []);
   const onFailure = useCallback(() => {
     setAvailable(false);
@@ -88,28 +79,47 @@ export default function Hero() {
     signalCityReady();
   }, []);
 
-  // Once the scene is ready, the flat map rises into the city; only then does any copy appear.
+  // Moves the camera along the map → skyline path and syncs the overlay copy to it.
+  const setJourney = useCallback((p: number) => {
+    cityJourney.progress = p;
+    const view = viewport.current;
+    if (!view) return;
+    view.style.setProperty("--skyline-opacity", String(Math.min(1, Math.max(0, (p - 0.59) / 0.2))));
+    view.dataset.stage = p > 0.66 ? "skyline" : p > 0.12 ? "descent" : "map";
+    setStage(p > 0.66 ? 2 : p > 0.12 ? 1 : 0);
+  }, []);
+
+  // The flat map is the loading screen. Once the scene is ready the city rises out of it,
+  // the camera flies to the skyline, and only then does the page chrome arrive.
   useEffect(() => {
     if (!ready) return;
     const finish = () => {
       cityJourney.reveal = 1;
+      setJourney(1);
       setRevealed(true);
     };
     if (!available || reduced) {
       finish();
       return;
     }
-    const tween = gsap.to(cityJourney, {
-      reveal: 1,
-      duration: 2.6,
-      delay: 0.9,
-      ease: "none",
-      onComplete: finish,
-    });
+    const flight = { p: cityJourney.progress };
+    const timeline = gsap
+      .timeline({ delay: 0.9, onComplete: finish })
+      .to(cityJourney, { reveal: 1, duration: 2.4, ease: "none" })
+      .to(
+        flight,
+        {
+          p: 1,
+          duration: 2.8,
+          ease: "power2.inOut",
+          onUpdate: () => setJourney(flight.p),
+        },
+        "-=0.8",
+      );
     return () => {
-      tween.kill();
+      timeline.kill();
     };
-  }, [ready, available, reduced]);
+  }, [ready, available, reduced, setJourney]);
   useEffect(() => {
     if (revealed) delete document.documentElement.dataset.cityLoading;
   }, [revealed]);
@@ -148,43 +158,6 @@ export default function Hero() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-    const update = (p: number) => {
-      cityJourney.progress = p;
-      const view = viewport.current;
-      if (!view) return;
-      const mapOpacity = 1 - Math.min(1, p / 0.25);
-      const skylineOpacity = Math.min(1, Math.max(0, (p - 0.59) / 0.2));
-      view.style.setProperty("--map-opacity", String(mapOpacity));
-      view.style.setProperty("--skyline-opacity", String(skylineOpacity));
-      view.style.setProperty("--journey-progress", `${p * 100}%`);
-      view.dataset.stage = p > 0.66 ? "skyline" : p > 0.12 ? "descent" : "map";
-      setStage(p > 0.66 ? 2 : p > 0.12 ? 1 : 0);
-    };
-    const trigger = ScrollTrigger.create({
-      trigger: section.current,
-      start: "top top",
-      end: "bottom bottom",
-      onUpdate: (self) => update(self.progress),
-      onRefresh: (self) => update(self.progress),
-    });
-    update(trigger.progress);
-    return () => {
-      trigger.kill();
-      cityJourney.progress = 0;
-    };
-  }, []);
-
-  const travelTo = (progress: number) => {
-    if (!section.current) return;
-    const top = section.current.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({
-      top: top + (section.current.offsetHeight - window.innerHeight) * progress,
-      behavior: reduced ? "instant" : "smooth",
-    });
-  };
-
   return (
     <section
       ref={section}
@@ -196,6 +169,7 @@ export default function Hero() {
         ref={viewport}
         className={`city-viewport ${ready ? "is-ready" : ""} ${!available ? "scene-fallback" : ""} ${exploring ? "is-exploring" : ""} ${revealed ? "is-revealed" : ""}`}
         data-stage="map"
+        style={{ "--skyline-opacity": 0 } as CSSProperties}
       >
         <div className="city-map-fallback">
           <ManhattanMap />
@@ -229,43 +203,6 @@ export default function Hero() {
         </h1>
         <div className="city-vignette" aria-hidden="true" />
 
-        <div className="city-topline">
-          <button
-            className="motion-toggle"
-            aria-pressed={!reduced}
-            onClick={() => {
-              setMotionOverride(!reduced);
-              setReady(true);
-              signalCityReady();
-            }}
-            aria-label={reduced ? "Enable full motion" : "Reduce motion"}
-          >
-            MOTION {reduced ? "OFF" : "ON"}
-            <span className="signal-dot" />
-          </button>
-        </div>
-
-        <div className="city-intro" aria-hidden={stage !== 0}>
-          <p className="city-intro-kicker">{hero.intro.kicker}</p>
-          <p className="city-intro-title">{hero.intro.title}</p>
-          <p className="city-intro-caption">{hero.intro.caption}</p>
-          <div className="hero-ctas">
-            <a
-              href={hero.primaryCta.href}
-              className="btn-primary"
-              tabIndex={stage === 0 ? 0 : -1}
-            >
-              {hero.primaryCta.label}
-            </a>
-            <a
-              href={hero.secondaryCta.href}
-              className="btn-secondary"
-              tabIndex={stage === 0 ? 0 : -1}
-            >
-              {hero.secondaryCta.label}
-            </a>
-          </div>
-        </div>
         <div className="city-skyline-copy" aria-hidden={stage !== 2}>
           <h2>
             {hero.headlineLead}
@@ -299,9 +236,6 @@ export default function Hero() {
               className="city-interaction-tools"
               aria-label="3D city controls"
             >
-              <p className="city-drag-hint">
-                Drag to look around.
-              </p>
               <div className="city-tool-row">
                 <div className="city-camera-buttons">
                   <button
@@ -340,40 +274,16 @@ export default function Hero() {
           </>
         )}
 
-        <div className="journey-controls" aria-label="City viewpoints">
-          <button
-            onClick={() => travelTo(0)}
-            aria-label="View Manhattan map"
-            aria-pressed={stage === 0}
-          >
-            <span className={stage === 0 ? "active" : ""} />{" "}
-            <span className="viewpoint-label">MAP</span>
-          </button>
-          <div className="journey-track">
-            <i />
-          </div>
-          <button
-            onClick={() => travelTo(0.94)}
-            aria-label="View Times Square skyline"
-            aria-pressed={stage === 2}
-          >
-            <span className={stage === 2 ? "active" : ""} />{" "}
-            <span className="viewpoint-label">CITY</span>
-          </button>
-        </div>
-
         <div className="city-footer-bar">
           <button
             className="city-scroll-button"
             onClick={() =>
-              stage === 2
-                ? document.getElementById("thesis")?.scrollIntoView({
-                    behavior: reduced ? "instant" : "smooth",
-                  })
-                : travelTo(0.94)
+              document.getElementById("thesis")?.scrollIntoView({
+                behavior: reduced ? "instant" : "smooth",
+              })
             }
           >
-            <span>{stage === 2 ? hero.nextCue : hero.scrollCue}</span>
+            <span>{hero.nextCue}</span>
             <span className="scroll-arrow" aria-hidden="true">
               ↓
             </span>

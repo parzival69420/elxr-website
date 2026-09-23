@@ -4,9 +4,11 @@ export function mapViewHeight(aspect: number) {
   return aspect < 1 ? 48 : 56 / aspect;
 }
 
-/** Shared camera position. Scroll updates this without rendering React each frame.
- *  `reveal` runs 0 → 1 once the scene is ready: the flat map rises into the city. */
-export const cityJourney = { progress: 0, ready: false, reveal: 0 };
+/** Shared camera state, read every frame without re-rendering React.
+ *  `load`     0 → 1 as the city's models download (drives the loading screen).
+ *  `reveal`   0 → 1 once the scene is ready: the flat map rises into the city.
+ *  `progress` 0 → 1 right after: the camera flies from the map to the skyline. */
+export const cityJourney = { progress: 0, ready: false, reveal: 0, load: 0 };
 /** The loading map is framed tighter than the first scroll position; the reveal pulls back. */
 export const LOAD_ZOOM = 1.35;
 export const CITY_READY_EVENT = "elxr:city-ready";

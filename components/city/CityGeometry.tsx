@@ -86,7 +86,7 @@ export function Ground() {
               vec2 edge=min(cell,1.-cell)*vec2(2.5,2.15);
               float road=1.-smoothstep(.16,.23,min(edge.x,edge.y));
               float grain=hash(floor(vWorld.xz*170.));
-              vec3 color=mix(vec3(.020,.023,.029),vec3(.006,.008,.011),road)*(.78+.22*grain);
+              vec3 color=mix(vec3(.014,.012,.04),vec3(.004,.003,.016),road)*(.78+.22*grain);
               float curb=smoothstep(.20,.225,min(edge.x,edge.y))*(1.-smoothstep(.235,.25,min(edge.x,edge.y)));
               color+=curb*vec3(.019,.022,.027);
               float lane=(1.-smoothstep(.006,.016,edge.x))*step(.65,fract(vWorld.z*1.6))*smoothstep(.3,.45,edge.y);
@@ -111,7 +111,7 @@ export function Ground() {
         <lineBasicMaterial color="#35758a" transparent opacity={0.65} />
       </lineLoop>
       <lineSegments geometry={streets}>
-        <lineBasicMaterial color="#34405e" transparent opacity={0.14} />
+        <lineBasicMaterial color="#ff3fae" transparent opacity={0.22} />
       </lineSegments>
     </>
   );

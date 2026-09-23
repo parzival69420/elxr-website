@@ -96,10 +96,10 @@ export const strips = {
     "HubSpot Inbound certified",
   ],
   numbers: [
-    { value: "7+ years", caption: "engineering attention for global brands" },
-    { value: "50M+", caption: "organic views on a single launch, in 24 hours" },
-    { value: "3B+", caption: "digital impressions on one campaign" },
-    { value: "$3M+", caption: "in measurable revenue driven" }, // [NAV: $5.5M vs $3M — $3M is the defensible "measurable" figure]
+    { tag: "Tenure", value: "7+ years", caption: "engineering attention for global brands" },
+    { tag: "Organic reach", value: "50M+", caption: "organic views on a single launch, in 24 hours" },
+    { tag: "Scale", value: "3B+", caption: "digital impressions on one campaign" },
+    { tag: "Revenue", value: "$3M+", caption: "in measurable revenue driven" }, // [NAV: $5.5M vs $3M — $3M is the defensible "measurable" figure]
   ],
 };
 

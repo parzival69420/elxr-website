@@ -41,8 +41,8 @@ export default function ManhattanMap() {
         context.fillStyle = g;
         context.fillRect(0, 0, width, height);
       };
-      haze(width * 0.92, height * 0.12, width * 0.45, "#3a1a6a66");
-      haze(width * 0.1, height * 0.95, width * 0.5, "#5a1c6a55");
+      haze(width * 0.92, height * 0.12, width * 0.45, "#2a3a5a44");
+      haze(width * 0.1, height * 0.95, width * 0.5, "#1e2a4455");
 
       const scale = (height / mapViewHeight(width / height)) * LOAD_ZOOM;
       context.save();

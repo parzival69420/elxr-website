@@ -12,6 +12,14 @@
   --orchid: #b43fd6;
   --deep-butter: #e8c766;
   --plum: #4c1d95;
+  /* Showcase theme: slate split panels, cream display type, one accent per screen */
+  --slate-deep: #121419; /* left panel, page base */
+  --slate: #1a1d24; /* right panel */
+  --slate-tile: #22262e; /* offset caption tiles */
+  --ghost: #22262f; /* oversized background words, a shade off the panel */
+  --cream: #f1e4cb; /* display headings */
+  --muted: #9aa1ad; /* secondary copy on slate */
+  --silver: #aeb4be; /* bento card fill, dark ink on top */
 }
 
 /* ---------- Satoshi (self-hosted, Fontshare) ---------- */
@@ -74,13 +82,14 @@ body {
 }
 
 ::selection {
-  background: var(--purple);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.85);
+  color: #0a0a0c;
 }
 
 /* ---------- The one glass treatment (do not invent a second) ----------
    Liquid glass: a saturated backdrop blur, a light-catching gradient rim,
-   a specular sheen from the top-left and a faint neon edge tint.
+   a specular sheen from the top-left, and a softer lit edge bottom-right
+   where light refracts back out. Clear and neutral: no colour of its own.
    Every floating surface on the site joins this one selector list instead of
    defining its own card. Per-surface knobs (all optional):
      --glass-radius  corner radius
@@ -88,16 +97,15 @@ body {
      --glass-halo    colour of the soft outer glow                          */
 :root {
   --glass-radius: 22px;
-  --glass-tint: rgba(12, 10, 24, 0.22);
-  --glass-halo: rgba(112, 56, 224, 0.28);
+  --glass-tint: rgba(22, 22, 26, 0.26);
+  --glass-halo: rgba(255, 255, 255, 0);
 }
 .glass,
-.site-header.is-past-hero .city-nav,
+.site-header .city-nav,
 .city-menu,
 .city-landmark-card,
 .city-landmark-buttons button,
 .city-camera-buttons button,
-.map-destination,
 .city-explore-link,
 .city-preview-caption,
 .menu-toggle,
@@ -115,31 +123,31 @@ body {
   background:
     linear-gradient(
       160deg,
-      rgba(255, 255, 255, 0.11) 0%,
-      rgba(255, 255, 255, 0.035) 38%,
-      rgba(255, 255, 255, 0.015) 62%,
-      rgba(255, 255, 255, 0.055) 100%
+      rgba(255, 255, 255, 0.13) 0%,
+      rgba(255, 255, 255, 0.04) 36%,
+      rgba(255, 255, 255, 0.02) 64%,
+      rgba(255, 255, 255, 0.07) 100%
     ),
     var(--glass-tint);
-  backdrop-filter: blur(22px) saturate(180%) brightness(1.06);
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(1.06);
+  backdrop-filter: blur(20px) saturate(160%) brightness(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(1.1);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-    inset 0 0 22px rgba(255, 255, 255, 0.035),
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    0 26px 60px -24px rgba(0, 0, 0, 0.75),
-    0 0 42px -14px var(--glass-halo);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -10px 20px -12px rgba(255, 255, 255, 0.1),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 20px 50px -22px rgba(0, 0, 0, 0.7),
+    0 0 40px -12px var(--glass-halo);
 }
-/* The rim: a 1px gradient border that catches light top-left and picks up
-   a pink-to-violet neon refraction bottom-right. */
+/* The rim: a 1px gradient border, brightest top-left, fading through the
+   middle, catching light again bottom-right. */
 .glass::before,
-.site-header.is-past-hero .city-nav::before,
+.site-header .city-nav::before,
 .city-menu::before,
 .city-landmark-card::before,
 .city-landmark-buttons button::before,
 .city-camera-buttons button::before,
-.map-destination::before,
 .city-explore-link::before,
 .city-preview-caption::before,
 .menu-toggle::before,
@@ -159,11 +167,11 @@ body {
   border-radius: inherit;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0.1) 26%,
-    rgba(255, 255, 255, 0.03) 50%,
-    rgba(255, 73, 186, 0.28) 78%,
-    rgba(131, 228, 242, 0.34) 100%
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.12) 24%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.12) 76%,
+    rgba(255, 255, 255, 0.34) 100%
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -193,23 +201,21 @@ body {
 /* No blur support, or the viewer asked for less transparency: go solid. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass,
-  .site-header.is-past-hero .city-nav,
+  .site-header .city-nav,
   .city-menu,
   .city-landmark-card,
-  .map-destination,
   .formula-ingredients,
   .contact-form {
-    --glass-tint: rgba(14, 12, 26, 0.94);
+    --glass-tint: rgba(20, 20, 24, 0.94);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
   .glass,
-  .site-header.is-past-hero .city-nav,
+  .site-header .city-nav,
   .city-menu,
   .city-landmark-card,
   .city-landmark-buttons button,
   .city-camera-buttons button,
-  .map-destination,
   .city-explore-link,
   .city-preview-caption,
   .btn-secondary,
@@ -217,7 +223,7 @@ body {
   .formula-ingredients,
   .metric-tile,
   .contact-form {
-    --glass-tint: rgb(18, 16, 30);
+    --glass-tint: rgb(24, 24, 28);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -225,7 +231,7 @@ body {
 
 /* ---------- Focus visibility (accessibility floor) ---------- */
 :focus-visible {
-  outline: 2px solid var(--lavender);
+  outline: 2px solid rgba(255, 255, 255, 0.9);
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -290,7 +296,6 @@ body {
 .city-viewport {
   --map-opacity: 1;
   --skyline-opacity: 0;
-  --journey-progress: 0%;
   position: sticky;
   top: 0;
   width: 100%;
@@ -352,7 +357,6 @@ body {
   align-items: center;
   margin: 0 3.5vw;
   height: 112px;
-  border-bottom: 1px solid rgba(213, 228, 255, 0.14);
 }
 .elxr-wordmark {
   display: flex;
@@ -376,15 +380,6 @@ body {
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.17em;
-}
-.signal-dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  flex-shrink: 0;
-  background: var(--city-cyan);
-  border-radius: 50%;
-  box-shadow: 0 0 10px #83e4f266;
 }
 .nav-actions {
   display: flex;
@@ -413,7 +408,7 @@ body {
 }
 .menu-toggle:hover,
 .menu-toggle.is-open {
-  --glass-tint: rgba(255, 73, 186, 0.16);
+  --glass-tint: rgba(255, 255, 255, 0.1);
 }
 .menu-toggle span {
   height: 1px;
@@ -427,41 +422,6 @@ body {
 .menu-toggle.is-open span:last-child {
   transform: translateY(-3.5px) rotate(-45deg);
 }
-.city-topline {
-  position: absolute;
-  top: 137px;
-  left: 3.5vw;
-  right: 3.5vw;
-  display: flex;
-  justify-content: space-between;
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  color: var(--city-muted);
-}
-.city-intro {
-  position: absolute;
-  top: 22%;
-  left: 9%;
-  opacity: var(--map-opacity);
-  pointer-events: none;
-  text-shadow:
-    0 2px 30px #050719,
-    0 2px 6px #050719;
-  isolation: isolate;
-}
-.city-intro::before {
-  content: "";
-  position: absolute;
-  inset: -60px -100px -65px -80px;
-  z-index: -1;
-  background: radial-gradient(
-    ellipse,
-    #020408d9 10%,
-    #020408aa 45%,
-    transparent 72%
-  );
-}
 .city-eyebrow {
   display: flex;
   align-items: center;
@@ -469,87 +429,6 @@ body {
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.2em;
-}
-.city-intro-title {
-  font-size: clamp(64px, 5.7vw, 104px);
-  line-height: 0.98;
-  letter-spacing: -0.065em;
-  font-weight: 500;
-  margin-top: 24px;
-}
-.city-intro-title em {
-  font-style: normal;
-  color: var(--text);
-}
-.city-intro-caption {
-  font-size: 15px;
-  color: var(--city-muted);
-  letter-spacing: 0.01em;
-  margin-top: 25px;
-}
-.city-map-labels {
-  position: absolute;
-  inset: 0;
-  opacity: var(--map-opacity);
-  pointer-events: none;
-}
-.map-label {
-  position: absolute;
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  color: var(--city-muted);
-  text-shadow:
-    0 1px 5px #000,
-    0 1px 12px #000;
-}
-.map-hudson {
-  left: 74%;
-  top: 19%;
-  transform: rotate(-6deg);
-}
-.map-east {
-  left: 68%;
-  top: 85%;
-  transform: rotate(-6deg);
-}
-.map-park {
-  left: 87%;
-  top: 65%;
-  color: #9bc9bc;
-}
-.map-downtown {
-  left: 15%;
-  top: 77%;
-}
-.map-destination {
-  position: absolute;
-  left: 44%;
-  top: 52%;
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  color: #fff;
-  white-space: nowrap;
-  padding: 12px 16px;
-  --glass-radius: 16px;
-}
-.destination-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: var(--city-pink);
-  border-radius: 50%;
-  margin-right: 12px;
-  box-shadow:
-    0 0 0 6px #ff49ba22,
-    0 0 0 12px #ff49ba11,
-    0 0 22px var(--city-pink);
-}
-.map-destination small {
-  display: block;
-  margin: 10px 0 0 24px;
-  font-size: 10px;
-  color: var(--city-muted);
-  letter-spacing: 0.1em;
 }
 .city-skyline-copy {
   position: absolute;
@@ -599,53 +478,6 @@ body {
 .city-viewport:not([data-stage="skyline"]) .city-explore-link {
   pointer-events: none;
 }
-.journey-controls {
-  position: absolute;
-  right: 3.5vw;
-  top: 43%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-.journey-controls button {
-  position: relative;
-  width: 36px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.journey-controls button > span:first-child {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #9ba4c1;
-}
-.journey-controls button > span.active {
-  background: var(--city-pink);
-  box-shadow: 0 0 0 5px #ff49ba22;
-}
-.viewpoint-label {
-  position: absolute;
-  right: 35px;
-  font-size: 8px;
-  letter-spacing: 0.16em;
-  opacity: 0.6;
-}
-.journey-track {
-  position: relative;
-  height: 70px;
-  width: 1px;
-  background: #b6c7e733;
-}
-.journey-track i {
-  position: absolute;
-  top: 0;
-  width: 1px;
-  height: var(--journey-progress);
-  background: var(--city-pink);
-}
 .city-footer-bar {
   position: absolute;
   bottom: 0;
@@ -690,33 +522,6 @@ body {
   min-width: 205px;
   text-align: right;
 }
-.city-loader {
-  position: absolute;
-  bottom: 112px;
-  left: 3.5vw;
-  right: 3.5vw;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  transition: opacity 0.6s;
-  pointer-events: none;
-}
-.city-loader.is-loaded {
-  opacity: 0;
-}
-.loader-status {
-  margin-left: auto;
-  color: var(--city-muted);
-}
-.loader-pulse {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--city-pink);
-  animation: map-load 1s ease-in-out infinite alternate;
-}
 @keyframes map-load {
   to {
     opacity: 0.25;
@@ -729,7 +534,7 @@ body {
   width: min(600px, 100%);
   min-height: 100svh;
   --glass-radius: 0;
-  --glass-tint: rgba(8, 7, 20, 0.72);
+  --glass-tint: rgba(14, 14, 18, 0.62);
   padding: 155px 55px 60px;
 }
 .city-menu > .city-eyebrow {
@@ -771,12 +576,6 @@ section[id]:not(#top),
   scroll-margin-top: 120px;
 }
 @media (min-width: 1600px) {
-  .city-intro {
-    left: 12%;
-  }
-  .city-topline {
-    top: 146px;
-  }
   .city-nav {
     height: 120px;
   }
@@ -785,23 +584,11 @@ section[id]:not(#top),
   .nav-center {
     display: none;
   }
-  .city-intro {
-    left: 7%;
-  }
-  .city-intro-title {
-    font-size: 78px;
-  }
   .city-footer-note {
     display: none;
   }
   .city-location {
     min-width: 0;
-  }
-  .city-map-labels .map-park {
-    left: 87%;
-  }
-  .map-destination {
-    left: 44%;
   }
   .city-skyline-copy {
     top: 23%;
@@ -838,62 +625,9 @@ section[id]:not(#top),
     width: 43px;
     height: 43px;
   }
-  .city-topline {
-    top: 109px;
-    left: 22px;
-    right: 22px;
-    font-size: 8px;
-  }
-  .city-topline span:last-child {
-    display: none;
-  }
-  .city-intro {
-    top: 25%;
-    left: 25px;
-    right: 25px;
-  }
   .city-eyebrow {
     font-size: 7px;
     letter-spacing: 0.14em;
-  }
-  .city-intro-title {
-    font-size: clamp(55px, 12vw, 88px);
-    margin-top: 19px;
-  }
-  .city-intro-caption {
-    font-size: 12px;
-    margin-top: 20px;
-  }
-  .city-map-labels .map-hudson {
-    left: 64%;
-    top: 22%;
-  }
-  .map-east {
-    left: 67%;
-    top: 80%;
-  }
-  .city-map-labels .map-park {
-    display: none;
-  }
-  .map-destination {
-    left: 34%;
-    top: 55%;
-    font-size: 10px;
-  }
-  .map-destination small {
-    font-size: 8px;
-  }
-  .map-downtown {
-    left: 10%;
-    top: 72%;
-    font-size: 8px;
-  }
-  .journey-controls {
-    right: 15px;
-    top: 44%;
-  }
-  .viewpoint-label {
-    display: none;
   }
   .city-skyline-copy {
     inset: 23% 22px auto;
@@ -934,15 +668,6 @@ section[id]:not(#top),
     width: 25px;
     font-size: 15px;
   }
-  .city-loader {
-    left: 22px;
-    right: 22px;
-    font-size: 7px;
-    bottom: 102px;
-  }
-  .loader-status {
-    display: none;
-  }
   .city-menu {
     padding: 125px 28px 45px;
   }
@@ -955,36 +680,32 @@ section[id]:not(#top),
 }
 @media (prefers-reduced-motion: reduce) {
   .city-live-scene,
-  .city-loader,
   .menu-toggle span {
     transition: none;
-  }
-  .loader-pulse {
-    animation: none;
   }
   .city-journey {
     height: 200svh;
   }
 }
 
-.site-header.is-past-hero .city-nav {
+.site-header .city-nav {
   --glass-radius: 999px;
-  --glass-tint: rgba(8, 7, 20, 0.5);
+  --glass-tint: rgba(18, 18, 22, 0.32);
   height: 64px;
   margin: 12px auto 0;
   width: min(1180px, calc(100% - 24px));
   padding: 0 10px 0 28px;
 }
-.site-header.is-past-hero .elxr-wordmark {
+.site-header .elxr-wordmark {
   font-size: 28px;
 }
-.site-header.is-past-hero .elxr-wordmark span {
+.site-header .elxr-wordmark span {
   display: none;
 }
-.site-header.is-past-hero .nav-contact {
+.site-header .nav-contact {
   min-height: 44px;
 }
-.site-header.is-past-hero .menu-toggle {
+.site-header .menu-toggle {
   width: 44px;
   height: 44px;
 }
@@ -1004,34 +725,12 @@ section[id]:not(#top),
 @media (prefers-reduced-motion: reduce) {
 }
 
-.motion-toggle {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  padding: 6px 0;
-  margin-top: -6px;
-  color: var(--text);
-}
-.motion-toggle[aria-pressed="false"] .signal-dot {
-  background: var(--city-muted);
-  box-shadow: none;
-}
 .city-menu {
   height: 100dvh;
   min-height: 0;
   overflow-y: auto;
 }
 @media (max-width: 767px) {
-  .city-topline .motion-toggle {
-    font-size: 7px;
-  }
-  .city-topline .motion-toggle .signal-dot {
-    display: block;
-    width: 3px;
-    height: 3px;
-  }
 }
 
 /* The skyline is a live, navigable scene. These controls remain outside WebGL. */
@@ -1077,17 +776,6 @@ section[id]:not(#top),
   bottom: 119px;
   pointer-events: none;
 }
-.city-drag-hint {
-  font-size: 8px;
-  letter-spacing: 0.17em;
-  color: #c4d3ea;
-  margin-bottom: 12px;
-  text-shadow: 0 1px 8px #000;
-}
-.city-drag-hint span {
-  color: var(--city-pink);
-  margin: 0 10px;
-}
 .city-tool-row {
   display: flex;
   justify-content: space-between;
@@ -1117,7 +805,7 @@ section[id]:not(#top),
 .city-landmark-buttons button,
 .city-camera-buttons button {
   --glass-radius: 999px;
-  --glass-tint: rgba(6, 8, 18, 0.55);
+  --glass-tint: rgba(14, 14, 18, 0.45);
   padding: 10px 16px;
   font-size: 12px;
   min-height: 44px;
@@ -1126,11 +814,10 @@ section[id]:not(#top),
 }
 .city-landmark-buttons button:hover,
 .city-camera-buttons button:hover {
-  --glass-tint: rgba(40, 30, 70, 0.55);
+  --glass-tint: rgba(255, 255, 255, 0.1);
 }
 .city-landmark-buttons button[aria-pressed="true"] {
-  --glass-tint: rgba(255, 73, 186, 0.3);
-  --glass-halo: rgba(255, 73, 186, 0.55);
+  --glass-tint: rgba(255, 255, 255, 0.22);
   color: #fff;
 }
 .city-camera-buttons button {
@@ -1150,8 +837,7 @@ section[id]:not(#top),
   max-width: calc(100% - 44px);
   padding: 28px;
   --glass-radius: 26px;
-  --glass-tint: rgba(8, 8, 22, 0.62);
-  --glass-halo: rgba(255, 73, 186, 0.3);
+  --glass-tint: rgba(16, 16, 20, 0.55);
 }
 .city-landmark-card .city-eyebrow {
   font-size: 10px;
@@ -1230,14 +916,6 @@ section[id]:not(#top),
   }
   .city-camera-buttons .city-reset {
     font-size: 9px;
-  }
-  .city-drag-hint {
-    font-size: 8px;
-    margin-bottom: 9px;
-    letter-spacing: 0.1em;
-  }
-  .city-drag-hint span {
-    margin: 0 5px;
   }
   .city-landmark-card {
     left: 22px;
@@ -1376,8 +1054,7 @@ section[id]:not(#top),
   transition: background 0.2s;
 }
 .bottle-stage-controls button:hover {
-  --glass-tint: color-mix(in srgb, var(--formula-color) 22%, transparent);
-  --glass-halo: color-mix(in srgb, var(--formula-color) 55%, transparent);
+  --glass-tint: rgba(255, 255, 255, 0.1);
 }
 .bottle-stage-controls button:disabled {
   opacity: 0.3;
@@ -1421,23 +1098,12 @@ section[id]:not(#top),
 }
 .bottle-formulas button[aria-selected="true"] {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
-    color-mix(in srgb, var(--formula-color) 14%, transparent);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 8px 24px -10px color-mix(in srgb, var(--formula-color) 70%, transparent);
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    0 8px 22px -10px rgba(0, 0, 0, 0.6);
   color: #f4f7fb;
-}
-.bottle-formulas button[aria-selected="true"]:after {
-  content: "";
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--formula-color);
-  box-shadow: 0 0 12px var(--formula-color);
 }
 .bottle-formulas button:hover {
   color: white;
@@ -1467,7 +1133,7 @@ section[id]:not(#top),
   padding: 42px 0 32px;
 }
 .formula-title .section-kicker {
-  color: var(--formula-color);
+  color: #a7b0bc;
   font-size: 10px;
   letter-spacing: 0.1em;
 }
@@ -1501,7 +1167,7 @@ section[id]:not(#top),
   transition: background 0.2s;
 }
 .formula-open:hover {
-  --glass-tint: color-mix(in srgb, var(--formula-color) 20%, transparent);
+  --glass-tint: rgba(255, 255, 255, 0.1);
 }
 .formula-open span {
   color: var(--formula-color);
@@ -1520,8 +1186,7 @@ section[id]:not(#top),
 .formula-ingredients {
   padding: 30px 32px;
   --glass-radius: 26px;
-  --glass-tint: color-mix(in srgb, var(--formula-color) 7%, rgba(10, 9, 22, 0.35));
-  --glass-halo: color-mix(in srgb, var(--formula-color) 45%, transparent);
+  --glass-tint: rgba(18, 18, 22, 0.3);
 }
 .formula-ingredients ul {
   display: flex;
@@ -1613,7 +1278,7 @@ section[id]:not(#top),
 }
 .service-detail-body h4 {
   margin-top: 26px;
-  color: #b4a5e7;
+  color: #e4e7ec;
 }
 .service-detail-body ul {
   margin-top: 12px;
@@ -1626,7 +1291,7 @@ section[id]:not(#top),
 .service-contact {
   display: inline-block;
   margin-top: 25px;
-  color: #b5a2f3;
+  color: #e4e7ec;
 }
 .service-proof blockquote {
   padding-left: 24px;
@@ -1636,7 +1301,7 @@ section[id]:not(#top),
   margin-top: 30px;
 }
 .service-proof .service-stat {
-  color: #c6b5ff;
+  color: #fff;
   font-weight: 500;
 }
 .metric-tile {
@@ -1644,7 +1309,7 @@ section[id]:not(#top),
 }
 .manifesto-section {
   padding: 120px 0 150px;
-  background: radial-gradient(ellipse at 50% 60%, #141127 0%, #030508 65%);
+  background: radial-gradient(ellipse at 50% 60%, #15171c 0%, #030508 65%);
 }
 .manifesto-symbol {
   display: block;
@@ -1804,7 +1469,7 @@ section[id]:not(#top),
   letter-spacing: -0.045em;
 }
 .thesis-section > p:first-child span {
-  color: #b7a3fa;
+  color: rgba(247, 244, 240, 0.5);
 }
 .thesis-section > p:last-child {
   color: #abbac8;
@@ -1847,7 +1512,7 @@ section[id]:not(#top),
   letter-spacing: -0.015em;
 }
 .about-copy .about-signoff {
-  color: #b6a2f1;
+  color: #c9ced6;
   font-size: 15px;
 }
 .faq-item {
@@ -2046,13 +1711,6 @@ section[id]:not(#top),
   transition: background 0.2s, border-color 0.2s;
   pointer-events: auto;
 }
-.btn-primary {
-  background: var(--purple);
-  color: #fff;
-}
-.btn-primary:hover {
-  background: #8250ef;
-}
 .btn-secondary {
   --glass-radius: 999px;
   color: var(--text);
@@ -2070,36 +1728,16 @@ section[id]:not(#top),
 .city-skyline-copy .hero-ctas {
   justify-content: center;
 }
-.city-viewport:not([data-stage="map"]) .city-intro .hero-ctas,
 .city-viewport:not([data-stage="skyline"]) .city-skyline-copy .hero-ctas {
   pointer-events: none;
 }
-.city-viewport:not([data-stage="map"]) .city-intro .hero-ctas > *,
 .city-viewport:not([data-stage="skyline"]) .city-skyline-copy .hero-ctas > * {
   pointer-events: none;
-}
-.city-intro-kicker {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--lavender);
-}
-.city-intro .city-intro-caption {
-  max-width: 30rem;
-  font-size: 18px;
-  line-height: 1.55;
-  color: #e3e6ee;
-}
-.city-intro-title {
-  margin-top: 16px;
 }
 .city-footer-bar {
   justify-content: center;
 }
 .city-scroll-button {
-  font-size: 13px;
-  letter-spacing: 0;
-}
-.city-drag-hint {
   font-size: 13px;
   letter-spacing: 0;
 }
@@ -2123,13 +1761,8 @@ section[id]:not(#top),
   min-height: 44px;
   padding: 0 22px;
   border-radius: 999px;
-  background: var(--purple);
-  color: #fff;
   font-size: 14px;
-  font-weight: 700;
-}
-.nav-contact:hover {
-  background: #8250ef;
+  font-weight: 600;
 }
 @media (min-width: 1001px) {
   .menu-toggle {
@@ -2230,7 +1863,7 @@ section[id]:not(#top),
   color: #abbac8;
 }
 .work-meta a {
-  color: var(--lavender);
+  color: #e4e7ec;
 }
 .work-meta a:hover {
   text-decoration: underline;
@@ -2320,7 +1953,7 @@ section[id]:not(#top),
 }
 .footer-email {
   font-size: 18px;
-  color: var(--lavender);
+  color: var(--text);
   margin-bottom: 10px;
 }
 .footer-email:hover {
@@ -2357,7 +1990,7 @@ section[id]:not(#top),
   line-height: 0.74;
   text-align: center;
   color: transparent;
-  background: linear-gradient(180deg, #2a1b52 0%, #0b0710 92%);
+  background: linear-gradient(180deg, #23262d 0%, #030508 92%);
   -webkit-background-clip: text;
   background-clip: text;
   user-select: none;
@@ -2391,64 +2024,42 @@ section[id]:not(#top),
 .bottle-stage.is-failed { height: 300px; }
 .bottle-stage.is-failed .bottle-loading { pointer-events: auto; }
 @media (max-width: 767px) {
-  .map-destination {
-    display: none;
-  }
-  .city-intro-kicker {
-    font-size: 13px;
-  }
-  .city-intro .city-intro-caption {
-    font-size: 16px;
-  }
 }
 
-/* ---------- Liquid layer ----------
-   Glass needs light behind it to read as glass. These are quiet neon pools
-   (brand purple, city pink, city cyan) placed behind the glass surfaces, plus
-   the "liquid" primary button: the elixir itself, glossy and lit from above. */
+/* ---------- Light layer ----------
+   Glass only reads as glass with light behind it. These are faint, neutral
+   pools of light behind the glass surfaces; the primary action is a solid
+   white pill, the one filled control on any screen. */
 .btn-primary,
 .nav-contact,
 .contact-submit {
   position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(255, 255, 255, 0) 52%),
-    radial-gradient(120% 90% at 50% 120%, var(--orchid) 0%, transparent 60%),
-    var(--purple);
-  color: #fff;
+  background: linear-gradient(180deg, #ffffff 0%, #eceef2 100%);
+  color: #0a0a0c;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -2px 6px rgba(20, 6, 60, 0.45),
-    0 10px 30px -10px rgba(112, 56, 224, 0.85),
-    0 0 0 1px rgba(167, 139, 250, 0.35);
-  transition: box-shadow 0.25s, filter 0.25s;
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 8px 24px -10px rgba(255, 255, 255, 0.35);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
 }
 .btn-primary:hover,
 .nav-contact:hover,
 .contact-submit:hover {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0) 52%),
-    radial-gradient(120% 90% at 50% 120%, var(--orchid) 0%, transparent 60%),
-    var(--purple);
-  filter: brightness(1.08);
+  background: linear-gradient(180deg, #ffffff 0%, #dfe2e8 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -2px 6px rgba(20, 6, 60, 0.45),
-    0 14px 40px -10px rgba(180, 63, 214, 0.9),
-    0 0 0 1px rgba(167, 139, 250, 0.5);
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    0 10px 30px -10px rgba(255, 255, 255, 0.5);
 }
 .contact-submit {
   border-radius: 999px;
   padding: 15px 32px;
 }
 
-/* Floating header: the hero nav stays a quiet rule, past the hero it
-   becomes a glass capsule floating over the page. */
-.site-header.is-past-hero {
-  padding-inline: 0;
-}
-.site-header.is-past-hero .city-nav {
+/* Floating header: a glass capsule hovering over the page from the first screen. */
+.site-header .city-nav {
   transition:
     height 0.3s,
     margin 0.3s;
@@ -2463,15 +2074,9 @@ section[id]:not(#top),
   --glass-radius: 32px;
 }
 
-/* Numbers strip: glass tiles floating over a violet pool. */
+/* Numbers strip: glass tiles floating over soft light. */
 .metric-tile {
   overflow: hidden;
-}
-.metric-tile:nth-child(2) {
-  --glass-halo: rgba(255, 73, 186, 0.28);
-}
-.metric-tile:nth-child(3) {
-  --glass-halo: rgba(131, 228, 242, 0.25);
 }
 .metric-grid {
   position: relative;
@@ -2483,14 +2088,13 @@ section[id]:not(#top),
   inset: -30% 5%;
   z-index: -1;
   background:
-    radial-gradient(40% 60% at 22% 50%, rgba(112, 56, 224, 0.35), transparent 70%),
-    radial-gradient(35% 55% at 62% 40%, rgba(255, 73, 186, 0.16), transparent 70%),
-    radial-gradient(35% 55% at 88% 60%, rgba(131, 228, 242, 0.12), transparent 70%);
+    radial-gradient(40% 60% at 25% 50%, rgba(255, 255, 255, 0.07), transparent 70%),
+    radial-gradient(35% 55% at 75% 45%, rgba(200, 215, 235, 0.06), transparent 70%);
   filter: blur(30px);
   pointer-events: none;
 }
 
-/* Formula panel: the selected formula's colour glows behind its glass. */
+/* Formula panel: soft light behind its glass. */
 .formula-panel {
   position: relative;
   isolation: isolate;
@@ -2503,7 +2107,7 @@ section[id]:not(#top),
   top: 10%;
   width: 55%;
   height: 90%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--formula-color) 32%, transparent), transparent);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.06), transparent);
   filter: blur(40px);
   pointer-events: none;
 }
@@ -2511,15 +2115,14 @@ section[id]:not(#top),
   margin-top: 18px;
 }
 
-/* Contact: the form is a glass sheet over two neon pools. */
+/* Contact: the form is a glass sheet over soft light. */
 .contact-section {
   position: relative;
   overflow: hidden;
   isolation: isolate;
   background:
-    radial-gradient(40% 55% at 78% 40%, rgba(112, 56, 224, 0.32), transparent 70%),
-    radial-gradient(28% 36% at 90% 68%, rgba(255, 73, 186, 0.16), transparent 70%),
-    radial-gradient(26% 34% at 58% 72%, rgba(131, 228, 242, 0.08), transparent 70%),
+    radial-gradient(40% 55% at 78% 40%, rgba(255, 255, 255, 0.07), transparent 70%),
+    radial-gradient(28% 36% at 62% 70%, rgba(200, 215, 235, 0.05), transparent 70%),
     var(--base);
 }
 .contact-form {
@@ -2548,11 +2151,10 @@ section[id]:not(#top),
 .contact-form textarea:focus-visible,
 .contact-form select:focus-visible {
   outline: none;
-  border-color: rgba(167, 139, 250, 0.7);
+  border-color: rgba(255, 255, 255, 0.5);
   box-shadow:
     inset 0 1px 3px rgba(0, 0, 0, 0.45),
-    0 0 0 4px rgba(167, 139, 250, 0.18),
-    0 0 24px -4px rgba(167, 139, 250, 0.5);
+    0 0 0 4px rgba(255, 255, 255, 0.1);
 }
 
 /* Selected work: the case figure is a filled vial, so give it the same
@@ -2581,13 +2183,13 @@ section[id]:not(#top),
 }
 
 @media (max-width: 767px) {
-  .site-header.is-past-hero .city-nav {
+  .site-header .city-nav {
     height: 58px;
     margin-top: 10px;
     width: calc(100% - 20px);
     padding: 0 7px 0 20px;
   }
-  .site-header.is-past-hero .elxr-wordmark {
+  .site-header .elxr-wordmark {
     font-size: 24px;
   }
   .city-menu {
@@ -2611,54 +2213,111 @@ section[id]:not(#top),
 
 /* ---------- Loading: the bare map, then the city rises and the copy arrives ---------- */
 .site-header,
-.city-topline,
-.city-footer-bar,
-.journey-controls {
+.city-footer-bar {
   transition: opacity 0.8s ease, visibility 0.8s;
 }
 html[data-city-loading] .site-header,
-html[data-city-loading] .city-topline,
 html[data-city-loading] .city-footer-bar,
-html[data-city-loading] .journey-controls,
 html[data-city-loading] .city-skyline-copy {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-.city-intro > * {
-  transition:
-    opacity 0.9s ease,
-    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.city-intro > :nth-child(2) {
-  transition-delay: 0.08s;
-}
-.city-intro > :nth-child(3) {
-  transition-delay: 0.16s;
-}
-.city-intro > :nth-child(4) {
-  transition-delay: 0.24s;
-}
-html[data-city-loading] .city-intro > * {
-  opacity: 0;
-  transform: translateY(14px);
-}
-html[data-city-loading] .city-intro::before {
-  opacity: 0;
-}
-.city-intro::before {
-  transition: opacity 0.9s ease;
-}
 @media (prefers-reduced-motion: reduce) {
-  .city-intro > *,
   .site-header,
-  .city-topline,
-  .city-footer-bar,
-  .journey-controls {
+  .city-footer-bar {
     transition: none;
   }
 }
 .city-menu > a:focus-visible {
   border-radius: 14px;
   outline-offset: 4px;
+}
+
+/* ---------- Loading screen: the flat map, a wordmark and one glass pill ----------
+   The hero is a single screen now: the map loads, the city rises out of it,
+   the camera settles on the skyline, then the header and copy arrive. */
+.city-journey {
+  height: 100svh;
+}
+.city-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 26px;
+  padding-bottom: max(56px, 9svh);
+  pointer-events: none;
+  transition:
+    opacity 0.7s ease,
+    visibility 0.7s;
+}
+.city-loading.is-done {
+  opacity: 0;
+  transition-delay: 0.45s;
+}
+.city-loading.is-gone {
+  visibility: hidden;
+}
+.city-loading-mark {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: clamp(64px, 9vw, 128px);
+  font-weight: 900;
+  letter-spacing: -0.085em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 10px 60px rgba(0, 0, 0, 0.6);
+}
+.city-loading-pill {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  min-width: 270px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(247, 244, 240, 0.9);
+  --glass-radius: 999px;
+}
+.city-loading-track {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.city-loading-track > span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.city-loading-percent {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: rgba(247, 244, 240, 0.6);
+}
+.city-footer-bar {
+  border-top: 0;
+}
+@media (max-width: 767px) {
+  .city-loading-pill {
+    min-width: 230px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .city-loading {
+    transition: none;
+  }
 }
