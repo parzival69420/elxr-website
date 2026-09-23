@@ -6,8 +6,12 @@
 :root {
   --base: #030508; /* page background */
   --text: #f7f4f0; /* body text */
-  --purple: #7038e0; /* primary, brand and liquid — NEVER body text on dark */
-  --lavender: #a78bfa; /* purple-family TEXT color on dark */
+  /* Accent: cyberpunk amber (replaced the original purple; names kept so every usage follows). */
+  --purple: #ffa41b; /* primary accent fills, bars, rings */
+  --lavender: #ffc46b; /* accent-family TEXT colour on dark */
+  --neon: #ffa41b;
+  --neon-glow: rgba(255, 164, 27, 0.45);
+  --wire: rgba(247, 244, 240, 0.3); /* wireframe line work */
   --butter: #f3dfa2; /* small-type accent only */
   --orchid: #b43fd6;
   --deep-butter: #e8c766;
@@ -20,6 +24,9 @@
   --cream: #f1e4cb; /* display headings */
   --muted: #9aa1ad; /* secondary copy on slate */
   --silver: #aeb4be; /* bento card fill, dark ink on top */
+  /* Page width: every section container spans the viewport minus one gutter per side. */
+  --gutter: clamp(20px, 4.5vw, 96px);
+  --shell: min(1760px, calc(100% - 2 * var(--gutter)));
 }
 
 /* ---------- Satoshi (self-hosted, Fontshare) ---------- */
@@ -55,6 +62,36 @@
   font-family: "Satoshi";
   src: url("/fonts/Satoshi-Black.woff2") format("woff2");
   font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Chakra Petch: HUD micro-type on the loading screen only. Satoshi carries everything else. */
+@font-face {
+  font-family: "Chakra Petch";
+  src: url("/fonts/ChakraPetch-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Chakra Petch";
+  src: url("/fonts/ChakraPetch-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Chakra Petch";
+  src: url("/fonts/ChakraPetch-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Chakra Petch";
+  src: url("/fonts/ChakraPetch-700.woff2") format("woff2");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
@@ -704,7 +741,7 @@ section[id]:not(#top),
   --glass-tint: rgba(18, 18, 22, 0.32);
   height: 64px;
   margin: 12px auto 0;
-  width: min(1180px, calc(100% - 24px));
+  width: var(--shell);
   padding: 0 10px 0 28px;
 }
 .site-header .elxr-wordmark {
@@ -774,11 +811,6 @@ section[id]:not(#top),
 .city-skyline-copy h2 {
   color: #fffaf6;
   font-weight: 600;
-}
-.city-viewport.is-exploring .city-skyline-copy {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
 }
 .city-interaction-tools {
   position: absolute;
@@ -954,7 +986,7 @@ section[id]:not(#top),
 .section-heading,
 .bottle-showcase,
 .service-index {
-  width: min(1280px, calc(100% - 80px));
+  width: var(--shell);
   margin-inline: auto;
 }
 .section-heading {
@@ -1466,7 +1498,7 @@ section[id]:not(#top),
 }
 
 .thesis-section {
-  width: min(1152px, calc(100% - 80px));
+  width: var(--shell);
   margin-inline: auto;
   padding: 140px 0 100px;
   display: grid;
@@ -1489,7 +1521,7 @@ section[id]:not(#top),
 }
 .about-section,
 .faq-section {
-  width: min(1152px, calc(100% - 80px));
+  width: var(--shell);
   margin-inline: auto;
   display: grid;
   grid-template-columns: 0.9fr 1.4fr;
@@ -1561,7 +1593,7 @@ section[id]:not(#top),
   scroll-margin-top: 75px;
 }
 .contact-layout {
-  width: min(1152px, calc(100% - 80px));
+  width: var(--shell);
   margin-inline: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1787,7 +1819,7 @@ section[id]:not(#top),
 }
 
 .work-section {
-  width: min(1280px, calc(100% - 80px));
+  width: var(--shell);
   margin-inline: auto;
   padding-block: 130px 120px;
 }
@@ -1940,7 +1972,7 @@ section[id]:not(#top),
 }
 
 .site-footer {
-  width: min(1280px, calc(100% - 80px));
+  width: var(--shell);
   margin-inline: auto;
   padding-top: 100px;
   overflow: hidden;
@@ -2251,84 +2283,263 @@ html[data-city-loading] .city-skyline-copy {
 .city-journey {
   height: 100svh;
 }
-.city-loading {
+/* ---------- Loading HUD: neon amber boot screen over the flat map ----------
+   One custom property, --p (0 to 1), set from real load progress, drives the
+   wordmark fill, the cell bar and the boot log. */
+.hud-loader {
+  --p: 0;
+  --hud-dim: rgba(255, 164, 27, 0.28);
   position: absolute;
   inset: 0;
   z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 26px;
-  padding-bottom: max(56px, 9svh);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
+  padding: clamp(20px, 4vw, 44px);
+  font-family: "Chakra Petch", "Satoshi", ui-monospace, monospace;
+  color: var(--neon);
   pointer-events: none;
-  transition:
-    opacity 0.7s ease,
-    visibility 0.7s;
-}
-.city-loading.is-done {
-  opacity: 0;
-  transition-delay: 0.45s;
-}
-.city-loading.is-gone {
-  visibility: hidden;
-}
-.city-loading-mark {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  transform: translateY(-50%);
-  text-align: center;
-  font-size: clamp(64px, 9vw, 128px);
-  font-weight: 900;
-  letter-spacing: -0.085em;
-  color: rgba(255, 255, 255, 0.92);
-  text-shadow: 0 10px 60px rgba(0, 0, 0, 0.6);
-}
-.city-loading-pill {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 20px;
-  min-width: 270px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(247, 244, 240, 0.9);
-  --glass-radius: 999px;
-}
-.city-loading-track {
-  position: relative;
-  flex: 1;
-  height: 4px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.14);
   overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(3, 5, 8, 0.55), rgba(3, 5, 8, 0.92) 70%),
+    linear-gradient(var(--hud-dim) 1px, transparent 1px) 0 0 / 100% 48px,
+    linear-gradient(90deg, var(--hud-dim) 1px, transparent 1px) 0 0 / 48px 100%,
+    rgba(3, 5, 8, 0.6);
+  background-blend-mode: normal, soft-light, soft-light, normal;
 }
-.city-loading-track > span {
+/* CRT scanlines and a sweeping bright band */
+.hud-loader::before,
+.hud-loader::after {
+  content: "";
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  background: #fff;
-  transform: scaleX(0);
-  transform-origin: left;
+  pointer-events: none;
 }
-.city-loading-percent {
-  min-width: 3ch;
-  text-align: right;
+.hud-loader::before {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.28) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: multiply;
+}
+.hud-loader::after {
+  height: 22%;
+  background: linear-gradient(transparent, rgba(255, 164, 27, 0.07), transparent);
+  animation: hud-sweep 3.2s linear infinite;
+}
+@keyframes hud-sweep {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(560%); }
+}
+
+.hud-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border: 0 solid var(--neon);
+  filter: drop-shadow(0 0 6px var(--neon-glow));
+}
+.hud-corner.is-tl { top: 16px; left: 16px; border-top-width: 2px; border-left-width: 2px; }
+.hud-corner.is-tr { top: 16px; right: 16px; border-top-width: 2px; border-right-width: 2px; }
+.hud-corner.is-bl { bottom: 16px; left: 16px; border-bottom-width: 2px; border-left-width: 2px; }
+.hud-corner.is-br { bottom: 16px; right: 16px; border-bottom-width: 2px; border-right-width: 2px; }
+
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--lavender);
+  opacity: 0.8;
+}
+
+.hud-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.hud-ring {
+  position: absolute;
+  width: min(62vw, 440px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px dashed var(--hud-dim);
+  border-top-color: var(--neon);
+  animation: hud-spin 9s linear infinite;
+}
+.hud-ring.is-inner {
+  width: min(50vw, 360px);
+  border-style: solid;
+  border-color: transparent;
+  border-left-color: var(--neon);
+  border-right-color: var(--hud-dim);
+  animation-duration: 4.5s;
+  animation-direction: reverse;
+  filter: drop-shadow(0 0 8px var(--neon-glow));
+}
+@keyframes hud-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Wordmark: an outlined shell that fills with neon liquid from the bottom */
+.hud-mark {
+  position: relative;
+  font-family: "Satoshi", sans-serif;
+  font-size: clamp(72px, 13vw, 176px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--neon);
+  filter: drop-shadow(0 0 14px var(--neon-glow));
+}
+.hud-mark-fill {
+  position: absolute;
+  inset: 0;
+  color: var(--neon);
+  -webkit-text-stroke: 0;
+  clip-path: inset(calc((1 - var(--p)) * 100%) 0 0 0);
+  text-shadow:
+    0 0 18px var(--neon-glow),
+    0 0 48px var(--neon-glow);
+}
+/* Chromatic glitch slices, firing in short bursts */
+.hud-mark::before,
+.hud-mark::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  -webkit-text-stroke: 0;
+  opacity: 0;
+}
+.hud-mark::before {
+  color: #ff3d6e;
+  animation: hud-glitch-a 3.6s steps(1) infinite;
+}
+.hud-mark::after {
+  color: #35f0ff;
+  animation: hud-glitch-b 3.6s steps(1) infinite;
+}
+@keyframes hud-glitch-a {
+  0%, 86%, 100% { opacity: 0; }
+  87% { opacity: 0.8; clip-path: inset(12% 0 64% 0); transform: translate(-6px, 0); }
+  90% { opacity: 0.8; clip-path: inset(58% 0 20% 0); transform: translate(5px, 0); }
+  93% { opacity: 0.8; clip-path: inset(34% 0 44% 0); transform: translate(-3px, 0); }
+  95% { opacity: 0; }
+}
+@keyframes hud-glitch-b {
+  0%, 87%, 100% { opacity: 0; }
+  88% { opacity: 0.7; clip-path: inset(70% 0 8% 0); transform: translate(6px, 0); }
+  91% { opacity: 0.7; clip-path: inset(20% 0 60% 0); transform: translate(-5px, 0); }
+  94% { opacity: 0; }
+}
+
+.hud-panel {
+  justify-self: center;
+  width: min(100%, 460px);
+  display: grid;
+  gap: 12px;
+}
+.hud-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  text-transform: uppercase;
+}
+.hud-status {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  color: var(--lavender);
+}
+.hud-percent {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: rgba(247, 244, 240, 0.6);
+  text-shadow: 0 0 16px var(--neon-glow);
+}
+.hud-cells {
+  display: grid;
+  grid-template-columns: repeat(32, 1fr);
+  gap: 3px;
+  height: 12px;
+  padding: 3px;
+  border: 1px solid var(--hud-dim);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+.hud-cells > span {
+  background: var(--neon);
+  /* Lit once --p passes this cell's slot; the leading cell fades in */
+  opacity: clamp(0.08, (var(--p) - var(--i)) * 32, 1);
+  box-shadow: 0 0 8px var(--neon-glow);
+}
+.hud-log {
+  display: grid;
+  gap: 4px;
+  min-height: 4.8em;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 196, 107, 0.35);
+}
+.hud-log li::before {
+  content: "> ";
+}
+.hud-log li::after {
+  content: " ....";
+}
+.hud-log li[data-on] {
+  color: var(--lavender);
+}
+.hud-log li[data-on]::after {
+  content: " OK";
+  color: var(--neon);
+}
+
+/* Exit: a white-hot flash, then a CRT collapse to a line */
+.hud-loader.is-done {
+  animation: hud-off 0.75s cubic-bezier(0.7, 0, 0.3, 1) 0.45s forwards;
+}
+.hud-loader.is-done .hud-mark-fill {
+  animation: hud-flash 0.45s ease-out forwards;
+}
+@keyframes hud-flash {
+  40% { color: #fff4e0; text-shadow: 0 0 30px var(--neon), 0 0 90px var(--neon); }
+}
+@keyframes hud-off {
+  0% { opacity: 1; transform: scale(1, 1); filter: brightness(1); }
+  55% { opacity: 1; transform: scale(1, 0.004); filter: brightness(3); }
+  100% { opacity: 0; transform: scale(0, 0.004); filter: brightness(3); }
+}
+.hud-loader.is-gone {
+  visibility: hidden;
 }
 .city-footer-bar {
   border-top: 0;
 }
 @media (max-width: 767px) {
-  .city-loading-pill {
-    min-width: 230px;
+  .hud-top span:last-child {
+    display: none;
+  }
+  .hud-percent {
+    font-size: 28px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .city-loading {
-    transition: none;
+  .hud-loader::after,
+  .hud-ring,
+  .hud-mark::before,
+  .hud-mark::after {
+    animation: none;
+  }
+  .hud-loader.is-done,
+  .hud-loader.is-done .hud-mark-fill {
+    animation: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
   }
 }

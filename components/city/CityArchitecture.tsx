@@ -8,8 +8,8 @@ import * as THREE from "three";
 import { onIsland, random } from "@/lib/city";
 import { stylize } from "./cityStyle";
 
-const BASE = "/models/city/";
-type Placement = { x: number; z: number; w: number; d: number; h: number; variant: number; seed: number; distant?: boolean };
+export const BASE = "/models/city/";
+export type Placement = { x: number; z: number; w: number; d: number; h: number; variant: number; seed: number; distant?: boolean };
 const anchors: Placement[] = [
   {x:-6.5,z:-4,w:3,d:2,h:16.2,variant:1,seed:1},
   {x:0,z:-4,w:2.5,d:1.8,h:12,variant:4,seed:2},
@@ -90,9 +90,8 @@ function InstancedPart({ part, placements, dimensions }: {
   return <instancedMesh ref={ref} args={[part.geometry,material,placements.length]} />;
 }
 
-export function CityBuildings({mobile}:{mobile:boolean}) {
-  const {scene} = useGLTF(`${BASE}architecture-kit.glb`);
-  const placements = useMemo(() => {
+/** Every kit building on the island. Seeded, so the blueprint wireframe and the city share one layout. */
+export function buildingPlacements(scene:THREE.Object3D,mobile:boolean):Placement[] {
     const rand=random(82019),data:Placement[]=[...anchors];
     // Each placement uses the kit building whose modelled height is closest, so floors keep their proportions.
     const kitHeights=Array.from({length:9},(_,i)=>(scene.getObjectByName(`Block_${i}`)!.userData as {height:number}).height);
@@ -120,6 +119,13 @@ export function CityBuildings({mobile}:{mobile:boolean}) {
         place(x+w/2-w2/2,z+(rand()-.5)*.2,w2,d*(.85+rand()*.15),h*(.45+rand()*.9));
       } else place(x,z,w,d,h);
     }
+    return data;
+}
+
+export function CityBuildings({mobile}:{mobile:boolean}) {
+  const {scene} = useGLTF(`${BASE}architecture-kit.glb`);
+  const placements = useMemo(() => {
+    const data=buildingPlacements(scene,mobile);
     return Array.from({length:9},(_,i)=>data.filter(p=>p.variant===i));
   }, [scene, mobile]);
   return <group>{placements.map((_,i)=>{const variant=scene.getObjectByName(`Block_${i}`)!;return <group key={variant.name}>
@@ -127,7 +133,7 @@ export function CityBuildings({mobile}:{mobile:boolean}) {
   </group>;})}</group>;
 }
 
-const models = [
+export const models = [
   {id:"times-square",file:"one-times-square",position:[-2.5,0,0]},
   {id:"empire-state",file:"empire-state",position:[7.5,0,9]},
   {id:"world-trade",file:"one-world-trade",position:[-3,0,47]},

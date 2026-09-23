@@ -12,6 +12,8 @@ export const cityJourney = { progress: 0, ready: false, reveal: 0, load: 0 };
 /** The loading map is framed tighter than the first scroll position; the reveal pulls back. */
 export const LOAD_ZOOM = 1.35;
 export const CITY_READY_EVENT = "elxr:city-ready";
+/** The 2D blueprint sheet has finished drawing: the 3D wireframe takes over from here. */
+export const BLUEPRINT_DRAWN_EVENT = "elxr:blueprint-drawn";
 
 export function signalCityReady() {
   cityJourney.ready = true;
@@ -62,12 +64,3 @@ export function random(seed: number) {
   };
 }
 
-export type CityAction =
-  | "left"
-  | "right"
-  | "up"
-  | "down"
-  | "zoom-in"
-  | "zoom-out"
-  | "reset";
-export type CityCommand = { id: number; action: CityAction };

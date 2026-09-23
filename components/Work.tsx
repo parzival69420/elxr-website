@@ -1,21 +1,23 @@
 import { bottles, work } from "@/lib/content";
 import { bottleColors } from "@/lib/bottles";
+import WorkVial from "@/components/WorkVial";
 
 /** Selected work: flagship cases, each figure shown with its constraint and mechanism. */
 export default function Work() {
   return (
-    <section id="work" className="work-section theme-split relative z-10">
-      <span className="ghost-word" aria-hidden="true">
-        Work
-      </span>
-      <div className="theme-wrap">
+    <section id="work" className="work-section cyber-work relative z-10" aria-labelledby="work-title">
+      <div className="cyber-grid">
+      <p className="cyber-label" aria-hidden="true">
+        Selected work
+      </p>
+      <div className="cyber-work-content">
       <header className="work-heading">
-        <h2 className="theme-display">{work.heading}</h2>
+        <h2 id="work-title" className="cyber-title">{work.heading}</h2>
         <p>{work.subline}</p>
       </header>
 
       <ol className="work-list">
-        {work.cases.map((c) => {
+        {work.cases.map((c, i) => {
           const index = bottles.findIndex((b) => b.id === c.service);
           const bottle = bottles[index];
           return (
@@ -24,10 +26,12 @@ export default function Work() {
               className="work-case"
               style={{ "--case-color": bottleColors[index] } as React.CSSProperties}
             >
-              <div className="work-figure" aria-hidden="true">
-                <span>{c.figure}</span>
-                <small>{c.figureLabel}</small>
-              </div>
+              <WorkVial
+                index={i}
+                figure={c.figure}
+                label={c.figureLabel}
+                fallback={bottleColors[index]}
+              />
               <div className="work-body">
                 <p className="work-meta">
                   {c.sector}
@@ -61,10 +65,10 @@ export default function Work() {
         })}
       </ol>
 
-      <a href={work.cta.href} className="cta-bar work-cta">
-        <span aria-hidden="true" />
+      <a href={work.cta.href} className="cyber-link work-cta">
         {work.cta.label}
       </a>
+      </div>
       </div>
     </section>
   );

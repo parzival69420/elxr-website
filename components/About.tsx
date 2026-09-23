@@ -1,25 +1,30 @@
-import { about } from "@/lib/content";
+import { about, contact } from "@/lib/content";
+import CyberSection, { CyberTitle, SpecList } from "./cyber/CyberSection";
+import { BuildingWire } from "./cyber/Wireframes";
+import { IconClock, IconPin, IconSpark, IconUser } from "./cyber/Icons";
 
 export default function About() {
-  const [lead, ...rest] = about.paragraphs;
-  const signoff = rest.pop();
+  const [lead, story, method, signoff] = about.paragraphs;
   return (
-    <section id="about" className="about-section theme-split relative z-10">
-      <span className="ghost-word" aria-hidden="true">
-        Distillery
-      </span>
-      <div className="theme-wrap theme-two-col">
-        <div>
-          <h2 className="theme-display">{about.heading}</h2>
-          <p className="about-lead">{lead}</p>
-        </div>
-        <div className="theme-tile about-copy">
-          {rest.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-          <p className="about-signoff">{signoff}</p>
-        </div>
+    <CyberSection id="about" label={about.eyebrow} wireframe={<BuildingWire />} labelledBy="about-title">
+      <CyberTitle id="about-title">{about.heading}</CyberTitle>
+      <p className="cyber-lead">{lead}</p>
+      <SpecList
+        items={[
+          { icon: <IconUser />, label: "Founder", value: 'Pranav "Nav" Prakash' },
+          { icon: <IconPin />, label: "Based", value: "New York & New Jersey" },
+          { icon: <IconClock />, label: "Experience", value: "7+ years engineering campaigns for global brands" },
+          { icon: <IconSpark />, label: "Method", value: "AI-assisted where it makes us faster. Human where it makes us better." },
+        ]}
+      />
+      <p className="cyber-body">{story}</p>
+      <p className="cyber-body">{method}</p>
+      <p className="cyber-signoff">{signoff}</p>
+      <div className="cyber-actions">
+        <a href={`mailto:${contact.email}`} className="cyber-link">
+          {contact.email}
+        </a>
       </div>
-    </section>
+    </CyberSection>
   );
 }

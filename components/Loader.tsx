@@ -4,12 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { CITY_READY_EVENT, cityJourney } from "@/lib/city";
 import { loader } from "@/lib/content";
 
-/** The loading screen's one control: a glass pill over the flat map, filled by real model progress. */
+const CELLS = 32;
+
+/**
+ * The loading screen: a neon HUD over the flat map. The wordmark fills with
+ * liquid, the cell bar lights up and the boot log ticks over, all from real
+ * model progress, written to one `--p` custom property on the root.
+ */
 export default function Loader() {
   const [loaded, setLoaded] = useState(false);
   const [gone, setGone] = useState(false);
-  const bar = useRef<HTMLSpanElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const label = useRef<HTMLSpanElement>(null);
+  const log = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
     const finish = () => setLoaded(true);
@@ -27,9 +34,12 @@ export default function Loader() {
       const waiting = Math.min(0.25, (now - start) / 16000);
       const target = loaded ? 1 : Math.max(waiting, 0.1 + cityJourney.load * 0.85);
       shown += (Math.min(target, loaded ? 1 : 0.95) - shown) * 0.08;
-      if (bar.current) bar.current.style.transform = `scaleX(${shown})`;
+      root.current?.style.setProperty("--p", shown.toFixed(4));
       if (label.current)
-        label.current.textContent = `${Math.round(shown * 100)}%`;
+        label.current.textContent = String(Math.round(shown * 100)).padStart(3, "0");
+      log.current?.querySelectorAll("li").forEach((line, i, lines) => {
+        line.toggleAttribute("data-on", shown >= (i + 1) / (lines.length + 1));
+      });
       if (!loaded || shown < 0.995) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -38,27 +48,53 @@ export default function Loader() {
 
   useEffect(() => {
     if (!loaded) return;
-    const timeout = setTimeout(() => setGone(true), 900);
+    const timeout = setTimeout(() => setGone(true), 1300);
     return () => clearTimeout(timeout);
   }, [loaded]);
 
   return (
     <div
-      className={`city-loading ${loaded ? "is-done" : ""} ${gone ? "is-gone" : ""}`}
+      ref={root}
+      className={`hud-loader ${loaded ? "is-done" : ""} ${gone ? "is-gone" : ""}`}
     >
-      <p className="city-loading-mark" aria-hidden="true">
-        ELXR
-      </p>
-      <div className="city-loading-pill glass">
-        <span role="status" aria-live="polite">
-          {loaded ? loader.served : loader.pouring}
-        </span>
-        <span className="city-loading-track" aria-hidden="true">
-          <span ref={bar} />
-        </span>
-        <span ref={label} className="city-loading-percent" aria-hidden="true">
-          0%
-        </span>
+      <span className="hud-corner is-tl" aria-hidden="true" />
+      <span className="hud-corner is-tr" aria-hidden="true" />
+      <span className="hud-corner is-bl" aria-hidden="true" />
+      <span className="hud-corner is-br" aria-hidden="true" />
+
+      <div className="hud-top" aria-hidden="true">
+        <span>ELXR//SYS 0.9</span>
+        <span>40.7580°N 73.9855°W</span>
+      </div>
+
+      <div className="hud-core" aria-hidden="true">
+        <span className="hud-ring" />
+        <span className="hud-ring is-inner" />
+        <p className="hud-mark" data-text="ELXR">
+          ELXR
+          <span className="hud-mark-fill">ELXR</span>
+        </p>
+      </div>
+
+      <div className="hud-panel">
+        <div className="hud-readout">
+          <span role="status" aria-live="polite" className="hud-status">
+            {loaded ? loader.served : loader.pouring}
+          </span>
+          <span className="hud-percent" aria-hidden="true">
+            <span ref={label}>000</span>%
+          </span>
+        </div>
+        <div className="hud-cells" aria-hidden="true">
+          {Array.from({ length: CELLS }, (_, i) => (
+            <span key={i} style={{ "--i": i / CELLS } as React.CSSProperties} />
+          ))}
+        </div>
+        <ol ref={log} className="hud-log" aria-hidden="true">
+          {loader.boot.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ol>
       </div>
     </div>
   );

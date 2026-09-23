@@ -29,7 +29,7 @@ body {
 .theme-wrap {
   position: relative;
   z-index: 1;
-  width: min(1200px, calc(100% - 96px));
+  width: var(--shell);
   margin-inline: auto;
 }
 .ghost-word {
@@ -592,7 +592,7 @@ section.contact-section.theme-split {
   padding: clamp(120px, 12vw, 170px) 0;
 }
 .contact-layout.theme-wrap {
-  width: min(1200px, calc(100% - 96px));
+  width: var(--shell);
 }
 .contact-ring {
   top: 16%;
@@ -1022,7 +1022,7 @@ section.contact-section.theme-split::before,
   position: absolute;
   top: 0;
   left: 50%;
-  width: min(1200px, calc(100% - 96px));
+  width: var(--shell);
   height: 1px;
   background: var(--hairline);
   transform: translateX(-50%);

@@ -41,9 +41,6 @@ export default function BentoCard({
       <div className="bento-head" aria-hidden="true">
         <span className="bento-index">{pad(index)}</span>
         <span className="bento-tag">{tag}</span>
-        <svg className="bento-arrow" viewBox="0 0 40 40">
-          <path d="M8 4h28v28h-9V19.4L10.4 36 4 29.6 20.6 13H8z" />
-        </svg>
       </div>
       <div className="bento-frame">
         <p className="bento-value">

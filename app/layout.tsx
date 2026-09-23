@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { meta } from "@/lib/content";
 import "./globals.css";
 import "./theme.css";
+import "./cyber.css";
+import "./blueprint.css";
 
 export const metadata: Metadata = {
   title: meta.title,

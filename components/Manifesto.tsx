@@ -1,13 +1,14 @@
 import { manifesto } from "@/lib/content";
+import CyberSection, { CyberTitle } from "./cyber/CyberSection";
+import { ReticleWire } from "./cyber/Wireframes";
 
 export default function Manifesto() {
   return (
-    <section className="manifesto-section theme-split relative z-10 overflow-hidden">
-      <span className="theme-ring manifesto-ring" aria-hidden="true" />
-      <div className="theme-wrap manifesto-inner">
-        <h2 className="theme-display">{manifesto.headline}</h2>
-        <p>{manifesto.subline}</p>
-      </div>
-    </section>
+    <CyberSection label="Manifesto" wireframe={<ReticleWire />} className="cyber-manifesto" labelledBy="manifesto-title">
+      <CyberTitle id="manifesto-title" size="lg">
+        {manifesto.headline}
+      </CyberTitle>
+      <p className="cyber-lead">{manifesto.subline}</p>
+    </CyberSection>
   );
 }

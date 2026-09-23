@@ -1,0 +1,265 @@
+/* ==========================================================================
+   Blueprint loader: a New York drafting sheet that draws itself from real
+   load progress (--p, 0 → 1, set on the root). Each stroke has a window,
+   --s (start) and --l (length), and draws while progress passes through it.
+   ========================================================================== */
+.blueprint-loader {
+  --p: 0;
+  --bp-ink: rgba(196, 222, 255, 0.78);
+  --bp-ink-fine: rgba(196, 222, 255, 0.34);
+  --bp-paper: #061431;
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 45%, transparent 40%, rgba(1, 5, 16, 0.75) 100%),
+    var(--bp-paper);
+  color: var(--bp-ink);
+  font-family: var(--tech, "Chakra Petch", sans-serif);
+  pointer-events: none;
+  transition: opacity 0.8s ease 0.9s;
+}
+.blueprint-loader.is-done {
+  opacity: 0;
+}
+/* Hand-off to the 3D city: the plan pushes toward the viewer as the wireframe rises behind it,
+   and the sheet furniture drops away. */
+.bp-plan,
+.bp-elevation,
+.bp-sheet-label,
+.bp-title-block {
+  transition:
+    transform 1.6s cubic-bezier(0.5, 0, 0.2, 1) 0.8s,
+    opacity 0.6s ease 0.8s;
+}
+.is-done .bp-plan {
+  transform: scale(1.18);
+}
+.is-done .bp-elevation,
+.is-done .bp-title-block {
+  opacity: 0;
+  transform: translateY(24px);
+}
+.is-done .bp-sheet-label {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+.bp-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(170, 205, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170, 205, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(rgba(170, 205, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170, 205, 255, 0.035) 1px, transparent 1px);
+  background-size:
+    120px 120px,
+    120px 120px,
+    24px 24px,
+    24px 24px;
+  background-position: center;
+}
+
+/* ---------- Strokes ---------- */
+.bp-line {
+  fill: none;
+  stroke: var(--bp-ink);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - clamp(0, (var(--p) - var(--s, 0)) / var(--l, 0.14), 1));
+  transition: stroke 0.35s ease;
+}
+.bp-line.is-fine {
+  stroke: var(--bp-ink-fine);
+}
+.bp-line.is-accent {
+  stroke: var(--neon);
+  filter: drop-shadow(0 0 3px var(--neon-glow));
+}
+.is-done .bp-line {
+  stroke: var(--neon);
+}
+
+/* Plan strokes live inside a group scaled 8.6×, so widths are in scene units. */
+.bp-plan {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+}
+.bp-plan .bp-line {
+  stroke-width: 0.13;
+}
+.bp-plan .bp-line.is-fine {
+  stroke-width: 0.06;
+}
+.bp-plan .bp-line.is-strong {
+  stroke-width: 0.2;
+}
+.bp-plan .bp-line.is-accent {
+  stroke-width: 0.24;
+}
+
+/* ---------- Elevation ---------- */
+.bp-elevation {
+  position: absolute;
+  left: clamp(20px, 4vw, 56px);
+  bottom: clamp(56px, 11vh, 110px);
+  width: min(900px, calc(100vw - 440px));
+}
+.bp-elevation svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.bp-elevation .bp-line {
+  stroke-width: 1.3;
+}
+.bp-elevation .bp-line.is-fine {
+  stroke-width: 0.9;
+}
+.bp-elevation .bp-line.is-strong {
+  stroke-width: 1.8;
+}
+.bp-hatch {
+  fill: none;
+  stroke: var(--bp-ink-fine);
+  stroke-width: 8;
+  stroke-dasharray: 1 7;
+  opacity: calc(clamp(0, (var(--p) - 0.3) * 4, 1));
+}
+.bp-dimension text {
+  fill: var(--bp-ink);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  opacity: clamp(0, (var(--p) - 0.84) * 8, 1);
+}
+.bp-cursor {
+  stroke: var(--neon);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 5px var(--neon-glow));
+  transform: translateX(calc(clamp(0, (var(--p) - 0.2) / 0.72, 1) * 1000px));
+  opacity: calc(clamp(0, (var(--p) - 0.2) * 20, 1) - clamp(0, (var(--p) - 0.95) * 20, 1));
+}
+
+/* ---------- Sheet furniture ---------- */
+.bp-sheet-label {
+  position: absolute;
+  top: clamp(28px, 5vh, 48px);
+  left: clamp(20px, 4vw, 56px);
+  font-size: clamp(22px, 2.2vw, 32px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #eaf2ff;
+}
+.bp-sheet-label span {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--bp-ink);
+}
+.bp-title-block {
+  position: absolute;
+  right: clamp(20px, 4vw, 56px);
+  bottom: clamp(20px, 4vw, 48px);
+  width: min(360px, calc(100% - 40px));
+  border: 1px solid var(--bp-ink);
+  background: rgba(6, 20, 49, 0.88);
+}
+.bp-title {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--bp-ink);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #eaf2ff;
+}
+.bp-title-block dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.bp-title-block dl > div {
+  padding: 10px 18px;
+  border-right: 1px solid var(--bp-ink-fine);
+}
+.bp-title-block dl > div:nth-child(3) {
+  border-right: 0;
+}
+.bp-title-block dl > div:first-child {
+  grid-column: 1 / -1;
+  border-right: 0;
+  border-bottom: 1px solid var(--bp-ink-fine);
+}
+.bp-status-row {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--bp-ink-fine);
+  border-right: 0 !important;
+}
+.bp-title-block dt {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bp-ink);
+}
+.bp-title-block dd {
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #eaf2ff;
+}
+.bp-status-row dd {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bp-percent {
+  font-variant-numeric: tabular-nums;
+  color: var(--neon);
+}
+.bp-progress {
+  display: block;
+  height: 3px;
+  background: var(--neon);
+  box-shadow: 0 0 10px var(--neon-glow);
+  transform: scaleX(var(--p));
+  transform-origin: left;
+}
+
+@media (max-width: 900px) {
+  .bp-elevation {
+    left: 3vw;
+    width: 94vw;
+    bottom: 262px;
+  }
+  .bp-title-block {
+    left: 20px;
+    right: 20px;
+    width: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blueprint-loader,
+  .bp-line,
+  .bp-plan,
+  .bp-elevation,
+  .bp-sheet-label,
+  .bp-title-block {
+    transition: none;
+  }
+  .is-done .bp-plan,
+  .is-done .bp-elevation,
+  .is-done .bp-title-block,
+  .is-done .bp-sheet-label {
+    transform: none;
+  }
+}

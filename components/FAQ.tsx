@@ -1,30 +1,23 @@
 import { faq } from "@/lib/content";
+import CyberSection, { CyberTitle } from "./cyber/CyberSection";
+import { TerminalWire } from "./cyber/Wireframes";
 
 export default function FAQ() {
   return (
-    <section className="faq-section theme-split relative z-10">
-      <span className="ghost-word" aria-hidden="true">
-        FAQ
-      </span>
-      <div className="theme-wrap theme-two-col">
-        <h2 className="theme-display">{faq.heading}</h2>
-        <div>
-          {faq.items.map((item) => (
-            <details key={item.q} className="faq-item group">
-              <summary>
-                <span>{item.q}</span>
-                <span
-                  className="transition-transform group-open:rotate-45"
-                  aria-hidden="true"
-                >
-                  +
-                </span>
-              </summary>
-              <p>{item.a}</p>
-            </details>
-          ))}
-        </div>
+    <CyberSection label="FAQ" wireframe={<TerminalWire />} labelledBy="faq-title">
+      <CyberTitle id="faq-title">{faq.heading}</CyberTitle>
+      <div className="cyber-rows">
+        {faq.items.map((item, i) => (
+          <details key={item.q} className="cyber-row is-faq">
+            <summary>
+              <span className="cyber-row-index">Q.0{i + 1}</span>
+              <h3>{item.q}</h3>
+              <span className="cyber-row-toggle" aria-hidden="true" />
+            </summary>
+            <p className="cyber-body cyber-answer">{item.a}</p>
+          </details>
+        ))}
       </div>
-    </section>
+    </CyberSection>
   );
 }

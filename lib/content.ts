@@ -50,6 +50,13 @@ export const global = {
 export const loader = {
   pouring: "Pouring...",
   served: "Served.",
+  // Boot log on the loading HUD, one line per quarter of real load progress.
+  boot: [
+    "Grid: Manhattan, locked",
+    "Six formulas, measured",
+    "Street lights, online",
+    "Glass chilled",
+  ],
 };
 
 export const hero = {
@@ -67,7 +74,6 @@ export const hero = {
   },
   primaryCta: { label: "Book a call", href: "#book" }, // [NAV: calendar link]
   secondaryCta: { label: "See the work", href: "#work" },
-  exploreCta: "Explore the city",
   nextCue: "What we do",
 };
 

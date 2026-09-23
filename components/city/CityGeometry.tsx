@@ -40,8 +40,15 @@ export function Ground() {
   // 0 = the navy loading map, 1 = the lit night city. Follows the reveal.
   const reveal = useMemo(() => ({ uReveal: { value: 0 } }), []);
   const water = useMemo(() => ({ uReveal: reveal.uReveal }), [reveal]);
+  const streetLines = useRef<THREE.LineBasicMaterial>(null);
+  const blueprintColor = useMemo(() => new THREE.Color("#c4deff"), []);
+  const cityColor = useMemo(() => new THREE.Color("#ff3fae"), []);
   useFrame(() => {
     reveal.uReveal.value = 1 - Math.pow(1 - cityJourney.reveal, 3);
+    // Streets draw as the blueprint grid (the loader sheet's ink) until the city is printed over them.
+    const lit = THREE.MathUtils.smoothstep(cityJourney.reveal, 0.55, 1);
+    streetLines.current?.color.lerpColors(blueprintColor, cityColor, lit);
+    if (streetLines.current) streetLines.current.opacity = THREE.MathUtils.lerp(0.32, 0.22, lit);
   });
   useEffect(
     () => () => {
@@ -111,7 +118,7 @@ export function Ground() {
         <lineBasicMaterial color="#35758a" transparent opacity={0.65} />
       </lineLoop>
       <lineSegments geometry={streets}>
-        <lineBasicMaterial color="#ff3fae" transparent opacity={0.22} />
+        <lineBasicMaterial ref={streetLines} color="#c4deff" transparent opacity={0.5} />
       </lineSegments>
     </>
   );

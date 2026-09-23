@@ -15,13 +15,12 @@ import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { hero } from "@/lib/content";
 import {
+  BLUEPRINT_DRAWN_EVENT,
   cityJourney,
   signalCityReady,
-  type CityCommand,
-  type CityAction,
 } from "@/lib/city";
 import ManhattanMap from "./city/ManhattanMap";
-import Loader from "./Loader";
+import BlueprintLoader from "./BlueprintLoader";
 
 const CityCanvas = dynamic(() => import("./city/CityCanvas"), { ssr: false });
 class SceneBoundary extends Component<
@@ -51,27 +50,14 @@ export default function Hero() {
   const [ready, setReady] = useState(false);
   const [stage, setStage] = useState(0);
   const [inView, setInView] = useState(true);
-  const [exploring, setExploring] = useState(false);
   const [revealed, setRevealed] = useState(false);
-  const [command, setCommand] = useState<CityCommand>({
-    id: 0,
-    action: "reset",
-  });
-  const onExplore = useCallback(() => {
-    setExploring(true);
-    scrollToTarget(section.current, { immediate: true });
-  }, []);
-  const onCameraChange = useCallback((position: string) => {
-    if (viewport.current) viewport.current.dataset.camera = position;
-  }, []);
-  const issueCommand = (action: CityAction) => {
-    if (action === "reset") setExploring(false);
-    else onExplore();
-    setCommand((previous) => ({ id: previous.id + 1, action }));
-  };
+  // The 3D build waits for the 2D blueprint sheet to finish drawing, then takes over from it.
+  const [drawn, setDrawn] = useState(false);
   useEffect(() => {
-    if (stage !== 2) setExploring(false);
-  }, [stage]);
+    const onDrawn = () => setDrawn(true);
+    window.addEventListener(BLUEPRINT_DRAWN_EVENT, onDrawn, { once: true });
+    return () => window.removeEventListener(BLUEPRINT_DRAWN_EVENT, onDrawn);
+  }, []);
   const reduced = settings?.reduced ?? false;
   const onReady = useCallback(() => setReady(true), []);
   const onFailure = useCallback(() => {
@@ -90,10 +76,11 @@ export default function Hero() {
     setStage(p > 0.66 ? 2 : p > 0.12 ? 1 : 0);
   }, []);
 
-  // The flat map is the loading screen. Once the scene is ready the city rises out of it,
-  // the camera flies to the skyline, and only then does the page chrome arrive.
+  // The blueprint sheet is the loading screen. Once it has drawn and the scene is ready, the
+  // 3D wireframe extrudes out of the plan and is printed into the city, the camera flies to
+  // the skyline, and only then does the page chrome arrive.
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !drawn) return;
     const finish = () => {
       cityJourney.reveal = 1;
       setJourney(1);
@@ -106,21 +93,22 @@ export default function Hero() {
     const flight = { p: cityJourney.progress };
     const timeline = gsap
       .timeline({ delay: 0.9, onComplete: finish })
-      .to(cityJourney, { reveal: 1, duration: 2.4, ease: "none" })
+      // Blueprint extrudes, then the scan line prints the city (phases in city/Blueprint).
+      .to(cityJourney, { reveal: 1, duration: 4.6, ease: "none" })
       .to(
         flight,
         {
           p: 1,
-          duration: 2.8,
+          duration: 3,
           ease: "power2.inOut",
           onUpdate: () => setJourney(flight.p),
         },
-        "-=0.8",
+        "-=1.6",
       );
     return () => {
       timeline.kill();
     };
-  }, [ready, available, reduced, setJourney]);
+  }, [ready, drawn, available, reduced, setJourney]);
   useEffect(() => {
     if (revealed) delete document.documentElement.dataset.cityLoading;
   }, [revealed]);
@@ -164,11 +152,11 @@ export default function Hero() {
       ref={section}
       id="top"
       className="city-journey"
-      aria-label="Explore ELXR's New York"
+      aria-label="ELXR's New York"
     >
       <div
         ref={viewport}
-        className={`city-viewport ${ready ? "is-ready" : ""} ${!available ? "scene-fallback" : ""} ${exploring ? "is-exploring" : ""} ${revealed ? "is-revealed" : ""}`}
+        className={`city-viewport ${ready ? "is-ready" : ""} ${!available ? "scene-fallback" : ""} ${revealed ? "is-revealed" : ""}`}
         data-stage="map"
         style={{ "--skyline-opacity": 0 } as CSSProperties}
       >
@@ -182,11 +170,6 @@ export default function Hero() {
                 mobile={settings.mobile}
                 reduced={reduced}
                 active={inView}
-                interactive={stage === 2}
-                exploring={exploring}
-                command={command}
-                onExplore={onExplore}
-                onCameraChange={onCameraChange}
                 onReady={onReady}
                 onFailure={onFailure}
               />
@@ -219,61 +202,9 @@ export default function Hero() {
             >
               {hero.primaryCta.label}
             </a>
-            {available && (
-              <button
-                onClick={onExplore}
-                tabIndex={stage === 2 ? 0 : -1}
-                className="btn-secondary"
-              >
-                {hero.exploreCta}
-              </button>
-            )}
           </div>
         </div>
 
-        {stage === 2 && available && exploring && (
-          <>
-            <div
-              className="city-interaction-tools"
-              aria-label="3D city controls"
-            >
-              <div className="city-tool-row">
-                <div className="city-camera-buttons">
-                  <button
-                    aria-label="Rotate city left"
-                    onClick={() => issueCommand("left")}
-                  >
-                    ←
-                  </button>
-                  <button
-                    aria-label="Rotate city right"
-                    onClick={() => issueCommand("right")}
-                  >
-                    →
-                  </button>
-                  <button
-                    aria-label="Zoom in"
-                    onClick={() => issueCommand("zoom-in")}
-                  >
-                    +
-                  </button>
-                  <button
-                    aria-label="Zoom out"
-                    onClick={() => issueCommand("zoom-out")}
-                  >
-                    −
-                  </button>
-                  <button
-                    className="city-reset"
-                    onClick={() => issueCommand("reset")}
-                  >
-                    Done exploring
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
 
         <div className="city-footer-bar">
           <button
@@ -288,7 +219,7 @@ export default function Hero() {
             </span>
           </button>
         </div>
-        <Loader />
+        <BlueprintLoader />
       </div>
     </section>
   );
