@@ -164,7 +164,7 @@ body {
 }
 .site-header .city-nav {
   border-radius: 0;
-  border-bottom: 1px solid rgba(241, 228, 203, 0.08);
+  border-bottom: 0;
 }
 .site-header.is-past-hero {
   background: rgba(18, 20, 25, 0.95);

@@ -123,18 +123,24 @@ function hiddenFromAO(object: THREE.Object3D) {
 }
 
 export function CityEffects({
-  mobile,
+  ao: withAO,
+  msaa,
   reduced,
   onReady,
 }: {
-  mobile: boolean;
+  /** Multisample anti-aliasing for the scene pass: the canvas's own antialias is bypassed
+   *  once rendering goes through the composer, so edges are only smooth with this. */
+  msaa: number;
+  /** Contact shadows. Off on phones, and dropped on any device that can't hold the frame rate. */
+  ao: boolean;
   reduced: boolean;
   onReady: () => void;
 }) {
-  const { gl, scene, camera, size } = useThree();
+  const { gl, scene, camera, size, viewport } = useThree();
   const { composer, mist, ao, grade } = useMemo(() => {
     // Both ping-pong targets carry depth, so the mist can read the scene's depth at full resolution.
     const target = new THREE.WebGLRenderTarget(1, 1, {
+      samples: msaa,
       type: THREE.HalfFloatType,
       depthTexture: new THREE.DepthTexture(1, 1),
     });
@@ -146,12 +152,12 @@ export function CityEffects({
     mist.material.depthTest = false;
     mist.material.depthWrite = false;
     composer.addPass(mist);
-    // Contact shadows where towers meet the street. Desktop only, at half resolution.
+    // Contact shadows where towers meet the street, at half resolution.
     let ao: GTAOPass | null = null;
-    if (!mobile) {
+    if (withAO) {
       ao = new GTAOPass(scene, camera, 1, 1);
-      ao.updateGtaoMaterial({ radius: 2.2, distanceFallOff: 1, thickness: 2, scale: 1.3, samples: 12 });
-      ao.updatePdMaterial({ radius: 6, rings: 2, samples: 12 });
+      ao.updateGtaoMaterial({ radius: 2.2, distanceFallOff: 1, thickness: 2, scale: 1.3, samples: 8 });
+      ao.updatePdMaterial({ radius: 6, rings: 2, samples: 8 });
       const pass = ao;
       const resize = pass.setSize.bind(pass);
       pass.setSize = (width: number, height: number) => resize(width * 0.5, height * 0.5);
@@ -172,12 +178,15 @@ export function CityEffects({
     const grade = new ShaderPass(GradeShader);
     composer.addPass(grade);
     return { composer, mist, ao, grade };
-  }, [gl, scene, camera, mobile]);
+  }, [gl, scene, camera, withAO, msaa]);
   useEffect(() => {
+    // The composer reads the pixel ratio once; keep it current when quality changes resolution.
+    composer.setPixelRatio(gl.getPixelRatio());
     composer.setSize(size.width, size.height);
     const ratio = gl.getPixelRatio();
     mist.uniforms.uTexel.value.set(1 / (size.width * ratio), 1 / (size.height * ratio));
-  }, [composer, mist, gl, size]);
+    grade.uniforms.uTexel.value.set(1 / (size.width * ratio), 1 / (size.height * ratio));
+  }, [composer, mist, grade, gl, size, viewport.dpr]);
   useEffect(
     () => () => {
       composer.passes.forEach((pass) => pass.dispose());

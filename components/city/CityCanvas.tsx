@@ -1,8 +1,9 @@
 "use client";
 
 import "@/lib/rafFallback";
-import { Suspense, type ReactNode, useMemo, useRef } from "react";
+import { Suspense, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
 import {
   MAP_ROTATION,
@@ -36,11 +37,39 @@ THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
 };
 const REVEAL_TILT = 0.42;
 const REVEAL_TURN = 0.18;
-const easeReveal = (value: number) => 1 - Math.pow(1 - value, 3);
+// Every camera move eases in and out: no move starts or stops at full speed.
+const ease = (value: number) => THREE.MathUtils.smootherstep(value, 0, 1);
+/** Longest step the intro takes in one frame. A one-off hitch (a GC pause, a late texture)
+ *  then slows the shot for a moment instead of making the camera jump, while any device
+ *  rendering at 15 fps or better still plays the intro in real time. */
+const MAX_STEP = 1 / 15;
+
+/** Steps the intro sequence once per rendered frame, before anything reads it. */
+function IntroClock() {
+  useFrame((_, delta) => cityJourney.intro?.advance(Math.min(delta, MAX_STEP)), -1);
+  return null;
+}
 
 /** Parts of the city that switch on at a point in the reveal (see Blueprint for the phases). */
 function RevealAt({ from, children }: { from: number; children: ReactNode }) {
   const group = useRef<THREE.Group>(null);
+  const { gl, camera, scene } = useThree();
+  // Hidden objects are skipped by the renderer, so their shaders and textures would otherwise
+  // be built on the frame they first appear: mid camera flight, as a visible hitch.
+  // Build them now, while the loading sheet still covers the canvas.
+  useEffect(() => {
+    const root = group.current;
+    if (!root) return;
+    root.visible = true;
+    gl.compile(root, camera, scene);
+    root.traverse((object) => {
+      const materials = (object as THREE.Mesh).material;
+      for (const material of Array.isArray(materials) ? materials : materials ? [materials] : [])
+        for (const value of Object.values(material))
+          if (value instanceof THREE.Texture) gl.initTexture(value);
+    });
+    root.visible = cityJourney.reveal >= from;
+  }, [gl, camera, scene, from]);
   useFrame(() => {
     if (group.current) group.current.visible = cityJourney.reveal >= from;
   });
@@ -50,22 +79,25 @@ function RevealAt({ from, children }: { from: number; children: ReactNode }) {
 /** The camera is locked to the map → skyline path; visitors cannot orbit or zoom. */
 function CameraRig({ reduced }: { reduced: boolean }) {
   const { camera, size } = useThree();
-  const target = useMemo(() => new THREE.Vector3(), []);
+  const scratch = useMemo(
+    // A camera, not a plain Object3D: only cameras point -Z (their view axis) at a lookAt target.
+    () => ({ target: new THREE.Vector3(), rig: new THREE.PerspectiveCamera(), from: new THREE.Quaternion() }),
+    [],
+  );
   useFrame(() => {
-    const p = THREE.MathUtils.smoothstep(cityJourney.progress, 0, 0.88);
-    const t = reduced ? (p > 0.5 ? 1 : 0) : p;
+    const t = reduced ? (cityJourney.progress > 0.5 ? 1 : 0) : ease(cityJourney.progress);
+    const mobile = size.width < 768;
     const mapHeight = mapViewHeight(size.width / size.height);
     const mapRadius = mapHeight / (2 * Math.tan(THREE.MathUtils.degToRad(24)));
+    // The reveal tilts the flat map into an aerial and turns it slightly, so the rising city reads.
+    const rise = ease(cityJourney.reveal);
     // Before the reveal finishes, the camera sits closer: the zoomed-in loading map.
-    const settle = THREE.MathUtils.lerp(1 / LOAD_ZOOM, 1, easeReveal(cityJourney.reveal));
+    const settle = THREE.MathUtils.lerp(1 / LOAD_ZOOM, 1, rise);
     const radius =
-      THREE.MathUtils.lerp(mapRadius, size.width < 768 ? CITY_RADIUS.mobile : CITY_RADIUS.desktop, t) *
+      THREE.MathUtils.lerp(mapRadius, mobile ? CITY_RADIUS.mobile : CITY_RADIUS.desktop, t) *
       THREE.MathUtils.lerp(settle, 1, t);
     const centerX = THREE.MathUtils.lerp(MAP_CENTER.x, CITY_TARGET.x, t);
-    // The reveal tilts the flat map into an aerial and turns it slightly, so the rising city reads.
-    const rise = easeReveal(cityJourney.reveal);
     const angle = THREE.MathUtils.lerp(0.006 + REVEAL_TILT * rise, CITY_ANGLE, t);
-    const azimuth = THREE.MathUtils.lerp(MAP_ROTATION + REVEAL_TURN * rise, -0.02, t);
     const z = THREE.MathUtils.lerp(MAP_CENTER.z, CITY_TARGET.z, t);
     // The camera leans back toward the bottom of the screen, so the aerial reads upright.
     const heading = THREE.MathUtils.lerp(-(MAP_ROTATION + REVEAL_TURN * rise), CITY_HEADING, t);
@@ -74,14 +106,20 @@ function CameraRig({ reduced }: { reduced: boolean }) {
       Math.cos(angle) * radius + 2,
       Math.cos(heading) * Math.sin(angle) * radius + z,
     );
-    target.set(centerX, THREE.MathUtils.lerp(0, CITY_TARGET.y, t), z);
-    camera.up
-      .set(Math.sin(azimuth) * (1 - t), t, -Math.cos(azimuth) * (1 - t))
-      .normalize();
-    camera.lookAt(target);
+    // Orientation turns along the shortest arc between the map view and the skyline view,
+    // so the long turn up Broadway never rolls or wobbles on the way.
+    const { rig, target, from } = scratch;
+    const azimuth = MAP_ROTATION + REVEAL_TURN * rise;
+    rig.position.copy(camera.position);
+    rig.up.set(Math.sin(azimuth), 0, -Math.cos(azimuth));
+    rig.lookAt(target.set(MAP_CENTER.x, 0, MAP_CENTER.z));
+    from.copy(rig.quaternion);
+    rig.up.set(0, 1, 0);
+    rig.lookAt(target.copy(CITY_TARGET));
+    camera.quaternion.slerpQuaternions(from, rig.quaternion, t);
     // A longer lens at the skyline: the city spans the full width and stays low in the frame.
     const perspective = camera as THREE.PerspectiveCamera;
-    const fov = THREE.MathUtils.lerp(48, size.width < 768 ? CITY_FOV.mobile : CITY_FOV.desktop, t);
+    const fov = THREE.MathUtils.lerp(48, mobile ? CITY_FOV.mobile : CITY_FOV.desktop, t);
     if (Math.abs(perspective.fov - fov) > 0.01) {
       perspective.fov = fov;
       perspective.updateProjectionMatrix();
@@ -103,11 +141,22 @@ export default function CityCanvas({
   onReady?: () => void;
   onFailure?: () => void;
 }) {
+  // Quality steps down (never back up, so it can't oscillate) when the device can't hold the
+  // frame rate: 2 = full (Retina resolution, 4x MSAA, contact shadows); 1 = no contact
+  // shadows, 1.5x; 0 = 1x without MSAA. Phones start at 1: their screens are already dense.
+  const [quality, setQuality] = useState(mobile ? 1 : 2);
+  const [monitoring, setMonitoring] = useState(false);
+  const ready = useCallback(() => {
+    setMonitoring(true);
+    onReady();
+  }, [onReady]);
+  const maxDpr = quality === 2 ? 2 : quality === 1 ? 1.5 : 1;
+  const msaa = quality === 0 ? 0 : 4;
   return (
     <Canvas
       frameloop={active ? "always" : "demand"}
       camera={{ fov: 48, near: 0.1, far: 650, position: [0, 110, 0.1] }}
-      dpr={[1, mobile ? 1.25 : 1.5]}
+      dpr={[1, maxDpr]}
       gl={{
         antialias: true,
         alpha: false,
@@ -128,6 +177,11 @@ export default function CityCanvas({
       fallback={<span>A stylised night view of Manhattan.</span>}
     >
       <color attach="background" args={["#050719"]} />
+      {/* Judged only once the city is up, so loading-time shader compiles don't count. */}
+      {monitoring && (
+        <PerformanceMonitor onDecline={() => setQuality((level) => Math.max(0, level - 1))} />
+      )}
+      <IntroClock />
       <CameraRig reduced={reduced} />
       <CityAtmosphere reduced={reduced} />
       <CityEnvironment />
@@ -154,7 +208,7 @@ export default function CityCanvas({
           <BoroughGlow />
           <DistantLights mobile={mobile} reduced={reduced} />
         </RevealAt>
-        <CityEffects mobile={mobile} reduced={reduced} onReady={onReady} />
+        <CityEffects ao={quality === 2} msaa={msaa} reduced={reduced} onReady={ready} />
       </Suspense>
     </Canvas>
   );

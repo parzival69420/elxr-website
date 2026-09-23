@@ -55,8 +55,9 @@ export const MistShader = {
       banks=smoothstep(.45,1.1,banks);
       float mist=sky?0.:clamp(ground*(.1+banks*1.8),0.,.72);
 
-      // Background blur: the far city softens, like a long lens.
-      float blur=smoothstep(55.,170.,dist)*(sky?.6:1.)*3.;
+      // Background blur: the city beyond Midtown softens, like a long lens; the towers in the
+      // shot stay in focus.
+      float blur=smoothstep(85.,200.,dist)*(sky?.6:1.)*3.;
       vec3 soft=scene.rgb;
       if(blur>.05){
         vec3 acc=vec3(0.);
@@ -79,14 +80,22 @@ export const GradeShader = {
     tDiffuse: { value: null as THREE.Texture | null },
     uTime: { value: 0 },
     uStrength: { value: 0 },
+    uTexel: { value: new THREE.Vector2(1 / 1024, 1 / 1024) },
   },
   vertexShader: MistShader.vertexShader,
   fragmentShader: /* glsl */ `
-    uniform sampler2D tDiffuse; uniform float uTime; uniform float uStrength;
+    uniform sampler2D tDiffuse; uniform float uTime; uniform float uStrength; uniform vec2 uTexel;
     varying vec2 vUv;
     float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
     void main(){
       vec3 c=texture2D(tDiffuse,vUv).rgb;
+      // Contrast-adaptive sharpen: crisper facade and roofline detail, backed off where local
+      // contrast is already high, so neon edges and the bloom halo stay soft.
+      vec3 n=texture2D(tDiffuse,vUv+vec2(0.,uTexel.y)).rgb, s=texture2D(tDiffuse,vUv-vec2(0.,uTexel.y)).rgb;
+      vec3 e=texture2D(tDiffuse,vUv+vec2(uTexel.x,0.)).rgb, w=texture2D(tDiffuse,vUv-vec2(uTexel.x,0.)).rgb;
+      vec3 lo=min(c,min(min(n,s),min(e,w))), hi=max(c,max(max(n,s),max(e,w)));
+      vec3 amount=sqrt(clamp(min(lo,1.-hi)/max(hi,1e-4),0.,1.))*.16;
+      c=clamp(c+(4.*c-n-s-e-w)*amount,0.,1.);
       // Dreamy rather than harsh: a gentle curve, shadows lifted toward indigo.
       vec3 graded=mix(c,c*c*(3.-2.*c),.45);
       float luma=dot(graded,vec3(.2126,.7152,.0722));

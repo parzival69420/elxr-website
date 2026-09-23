@@ -5,7 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import * as THREE from "three";
-import { onIsland, random } from "@/lib/city";
+import { CITY_READY_EVENT, cityJourney, onIsland, random } from "@/lib/city";
 import { stylize } from "./cityStyle";
 
 export const BASE = "/models/city/";
@@ -35,8 +35,9 @@ export function CityEnvironment() {
     let disposed = false;
     const previous = scene.environment;
     let target: THREE.WebGLRenderTarget | undefined;
-    const loader = new RGBELoader();
-    loader.load("/textures/rooftop-night-1k.hdr", (texture) => {
+    // The reflections are a finishing touch (the stylized shading dominates), so this 1.6 MB
+    // download waits until the city is up rather than competing with the models it needs.
+    const load = () => new RGBELoader().load("/textures/rooftop-night-1k.hdr", (texture) => {
       if (disposed) { texture.dispose(); return; }
       const pmrem = new THREE.PMREMGenerator(gl);
       target = pmrem.fromEquirectangular(texture);
@@ -44,7 +45,14 @@ export function CityEnvironment() {
       scene.environmentIntensity = .58;
       texture.dispose(); pmrem.dispose();
     }, undefined, () => { /* Direct lighting also supports offline HDR failure. */ });
-    return () => { disposed = true; scene.environment = previous; target?.dispose(); };
+    if (cityJourney.ready) load();
+    else window.addEventListener(CITY_READY_EVENT, load, { once: true });
+    return () => {
+      disposed = true;
+      window.removeEventListener(CITY_READY_EVENT, load);
+      scene.environment = previous;
+      target?.dispose();
+    };
   }, [gl, scene]);
   return null;
 }
@@ -64,7 +72,9 @@ function InstancedPart({ part, placements, dimensions }: {
   // Instanced interiors vary by address, and each building has its own share of lit windows.
   const material = useMemo(() => {
     const value = (part.material as THREE.MeshStandardMaterial).clone();
-    if (value.map) value.map.anisotropy = 8;
+    // Facades are seen at a glancing angle from the skyline shot: full anisotropy keeps them crisp.
+    if (value.map) value.map.anisotropy = 16;
+    if (value.emissiveMap) value.emissiveMap.anisotropy = 16;
     // Lit windows carry the night skyline: push the facade atlas and interiors hard enough to bloom.
     if (value.name.startsWith("Facade_atlas")) value.emissiveIntensity *= 2.6;
     if (/interiors/.test(value.name)) {

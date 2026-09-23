@@ -90,22 +90,29 @@ export default function Hero() {
       finish();
       return;
     }
+    // Linear here: the camera rig eases every move itself (city/CityCanvas).
     const flight = { p: cityJourney.progress };
     const timeline = gsap
-      .timeline({ delay: 0.9, onComplete: finish })
-      // Blueprint extrudes, then the scan line prints the city (phases in city/Blueprint).
-      .to(cityJourney, { reveal: 1, duration: 4.6, ease: "none" })
-      .to(
-        flight,
-        {
-          p: 1,
-          duration: 3,
-          ease: "power2.inOut",
-          onUpdate: () => setJourney(flight.p),
-        },
-        "-=1.6",
-      );
+      .timeline({ paused: true })
+      // A beat while the sheet lifts, then the blueprint extrudes and is printed (city/Blueprint).
+      .to(cityJourney, { reveal: 1, duration: 4.6, ease: "none" }, 0.9)
+      // The flight to the skyline starts while the last towers print, so the move never stops.
+      .to(flight, { p: 1, duration: 3.6, ease: "none", onUpdate: () => setJourney(flight.p) }, 3.7);
+    // The 3D render loop steps the timeline, one step per rendered frame.
+    let done = false;
+    cityJourney.intro = {
+      advance: (seconds) => {
+        if (done) return;
+        timeline.time(timeline.time() + seconds);
+        if (timeline.progress() >= 1) {
+          done = true;
+          cityJourney.intro = null;
+          finish();
+        }
+      },
+    };
     return () => {
+      cityJourney.intro = null;
       timeline.kill();
     };
   }, [ready, drawn, available, reduced, setJourney]);
@@ -169,7 +176,8 @@ export default function Hero() {
               <CityCanvas
                 mobile={settings.mobile}
                 reduced={reduced}
-                active={inView}
+                // Keep rendering until the intro has landed: it is stepped by the render loop.
+                active={inView || !revealed}
                 onReady={onReady}
                 onFailure={onFailure}
               />

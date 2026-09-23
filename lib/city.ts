@@ -8,7 +8,15 @@ export function mapViewHeight(aspect: number) {
  *  `load`     0 → 1 as the city's models download (drives the loading screen).
  *  `reveal`   0 → 1 once the scene is ready: the flat map rises into the city.
  *  `progress` 0 → 1 right after: the camera flies from the map to the skyline. */
-export const cityJourney = { progress: 0, ready: false, reveal: 0, load: 0 };
+export const cityJourney = {
+  progress: 0,
+  ready: false,
+  reveal: 0,
+  load: 0,
+  /** The intro sequence, stepped by the 3D render loop so every rendered frame gets exactly
+   *  one camera update (a separate animation clock drifts against it and reads as jitter). */
+  intro: null as null | { advance: (seconds: number) => void },
+};
 /** The loading map is framed tighter than the first scroll position; the reveal pulls back. */
 export const LOAD_ZOOM = 1.35;
 export const CITY_READY_EVENT = "elxr:city-ready";
