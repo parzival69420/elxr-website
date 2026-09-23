@@ -16,6 +16,10 @@ body {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  background: var(--slate-deep);
+}
+/* The two-tone split belongs to the formula section alone: pure black left, near-black right. */
+.menu-intro.theme-split {
   background: linear-gradient(
     90deg,
     var(--slate-deep) 0 50%,
@@ -962,7 +966,7 @@ section.contact-section.theme-split {
 }
 @media (max-width: 760px) {
   .menu-floor {
-    top: 49%;
+    top: 51%;
     width: 80vw;
     height: 70px;
   }
@@ -977,4 +981,173 @@ html:not(.js) .menu-floor {
   .menu-scene-title .theme-display {
     font-size: clamp(44px, 4.3vw, 76px);
   }
+}
+
+/* ==========================================================================
+   Black pass: one solid tone outside the formula scenes, so structure comes
+   from rhythm, hairlines and type rather than panels.
+   ========================================================================== */
+:root {
+  --hairline: rgba(241, 228, 203, 0.08);
+  --section-pad: clamp(112px, 11vw, 168px);
+}
+.ghost-word,
+.menu-ghost {
+  color: #17171b;
+}
+
+/* Sections after the formulas: same padding, separated by a single hairline at the content width. */
+section.service-index.theme-split,
+section.work-section.theme-split,
+section.manifesto-section.theme-split,
+section.about-section.theme-split,
+section.faq-section.theme-split,
+section.contact-section.theme-split {
+  padding-block: var(--section-pad);
+}
+section.work-section.theme-split > .theme-wrap,
+section.manifesto-section.theme-split > .theme-wrap,
+section.about-section.theme-split > .theme-wrap,
+section.faq-section.theme-split > .theme-wrap,
+section.contact-section.theme-split > .theme-wrap {
+  padding-top: 0;
+}
+section.work-section.theme-split::before,
+section.manifesto-section.theme-split::before,
+section.about-section.theme-split::before,
+section.faq-section.theme-split::before,
+section.contact-section.theme-split::before,
+.site-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(1200px, calc(100% - 96px));
+  height: 1px;
+  background: var(--hairline);
+  transform: translateX(-50%);
+}
+.site-footer {
+  position: relative;
+}
+.site-footer::before {
+  width: 100%;
+}
+
+/* One heading scale for every section title. */
+.theme-wrap h2.theme-display,
+.work-heading h2.theme-display,
+.service-index-heading h2.theme-display,
+.contact-heading.theme-display {
+  font-size: clamp(44px, 5.4vw, 88px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+.menu-intro-grid h2.theme-display {
+  font-size: clamp(56px, 7.6vw, 128px);
+}
+.manifesto-inner h2.theme-display {
+  font-size: clamp(52px, 7vw, 116px);
+}
+.work-heading,
+.service-index .service-index-heading {
+  margin-bottom: clamp(48px, 5vw, 80px);
+}
+.work-heading p,
+.service-index .service-index-heading p {
+  color: var(--muted);
+}
+
+/* Tiles and rows read against pure black. */
+.theme-tile,
+.contact-form.theme-tile,
+.menu-tile-right {
+  background: var(--slate-tile);
+  box-shadow: inset 0 1px 0 rgba(241, 228, 203, 0.05);
+}
+.service-disclosure,
+.service-disclosure:last-child,
+.faq-item,
+.faq-item:first-child,
+.work-case {
+  border-color: var(--hairline);
+}
+.service-disclosure summary:hover h3,
+.faq-item summary:hover > span:first-child {
+  color: #fff;
+}
+.contact-form input,
+.contact-form textarea {
+  background: #0a0a0c;
+  border: 1px solid rgba(241, 228, 203, 0.1);
+  border-radius: 2px;
+}
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: var(--purple);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(112, 56, 224, 0.25);
+}
+.site-header.is-past-hero {
+  background: rgba(0, 0, 0, 0.92);
+}
+@media (max-width: 900px) {
+  section.work-section.theme-split::before,
+  section.manifesto-section.theme-split::before,
+  section.about-section.theme-split::before,
+  section.faq-section.theme-split::before,
+  section.contact-section.theme-split::before {
+    width: calc(100% - 40px);
+  }
+}
+
+/* The collection's title: small, pinned above all six formulas instead of its own screen. */
+.menu-heading {
+  position: absolute;
+  z-index: 4;
+  top: 118px;
+  left: var(--gutter);
+  max-width: 30vw;
+}
+.menu-heading h2 {
+  color: var(--cream);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.menu-heading p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.menu-scene-index {
+  top: 196px;
+}
+@media (min-width: 761px) {
+  .menu-scene-title {
+    top: 33%;
+  }
+}
+@media (max-width: 760px) {
+  .menu-heading {
+    top: 92px;
+    max-width: none;
+    right: var(--gutter);
+  }
+  .menu-heading h2 {
+    font-size: 18px;
+  }
+  .menu-heading p {
+    display: none;
+  }
+  .menu-scene-index {
+    top: 124px;
+  }
+}
+html:not(.js) .menu-heading {
+  position: static;
+  max-width: none;
+  padding: 96px 8vw 0;
+  background: var(--slate-deep);
 }

@@ -39,7 +39,8 @@
     ".next-city-realism/types/**/*.ts",
     ".next-reveal-check/types/**/*.ts",
     ".next-theme-check/types/**/*.ts",
-    ".next-q/types/**/*.ts"
+    ".next-q/types/**/*.ts",
+    ".next-push/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

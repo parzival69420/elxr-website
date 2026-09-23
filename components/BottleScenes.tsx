@@ -13,6 +13,7 @@ import {
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { bottles, servicesIntro } from "@/lib/content";
+import { scrollToTarget } from "@/lib/smoothScroll";
 import { bottleColors } from "@/lib/bottles";
 import {
   bottleJourney,
@@ -49,7 +50,7 @@ function openDetail(id: string) {
   const detail = document.getElementById(`detail-${id}`) as HTMLDetailsElement | null;
   if (!detail) return;
   detail.open = true;
-  detail.scrollIntoView({ block: "start" });
+  scrollToTarget(detail);
 }
 
 /**
@@ -84,7 +85,23 @@ export default function BottleScenes() {
       { rootMargin: "300px" },
     );
     if (track.current) observer.observe(track.current);
+    // Build the bottle scene in the background once the hero's reveal flight has landed,
+    // so its model parsing and shader compiles never stall a scroll or the flight itself.
+    let idle = 0;
+    const html = document.documentElement;
+    const warm = () => {
+      if ("cityLoading" in html.dataset) return;
+      loading.disconnect();
+      const schedule =
+        window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
+      idle = schedule(() => setMounted(true), { timeout: 3000 }) as number;
+    };
+    const loading = new MutationObserver(warm);
+    loading.observe(html, { attributes: true, attributeFilter: ["data-city-loading"] });
+    warm();
     return () => {
+      loading.disconnect();
+      window.cancelIdleCallback?.(idle);
       observer.disconnect();
       mobile.removeEventListener("change", update);
       reduced.removeEventListener("change", update);
@@ -140,40 +157,17 @@ export default function BottleScenes() {
     const el = track.current;
     if (!el) return;
     if (index >= SCENE_COUNT) {
-      document.getElementById("formula-index")?.scrollIntoView({ behavior: "smooth" });
+      scrollToTarget(document.getElementById("formula-index"));
       return;
     }
     const top = el.getBoundingClientRect().top + window.scrollY - window.innerHeight;
-    window.scrollTo({
-      top: top + scrollFromScene(index + 0.5) * window.innerHeight,
-      behavior: settings.reduced ? "instant" : "smooth",
+    scrollToTarget(top + scrollFromScene(index + 0.5) * window.innerHeight, {
+      immediate: settings.reduced,
     });
   };
 
   return (
     <section id="services" className="menu" aria-labelledby="menu-heading">
-      <div className="menu-intro theme-split">
-        <span className="ghost-word" aria-hidden="true">
-          Menu
-        </span>
-        <span className="theme-ring menu-intro-ring" aria-hidden="true" />
-        <div className="theme-wrap menu-intro-grid">
-          <div>
-            <h2 id="menu-heading" className="theme-display">
-              {servicesIntro.heading}
-            </h2>
-          </div>
-          <div className="theme-tile menu-intro-tile">
-            <h3>Six formulas.</h3>
-            <p>{servicesIntro.subline}</p>
-          </div>
-          <button type="button" className="cta-bar menu-intro-cta" onClick={() => goTo(0)}>
-            <span aria-hidden="true" />
-            Scroll the collection
-          </button>
-        </div>
-      </div>
-
       <div
         ref={track}
         className="menu-track"
@@ -185,6 +179,10 @@ export default function BottleScenes() {
           style={{ "--accent": bottleColors[0] } as CSSProperties}
         >
           <div className="menu-panels" aria-hidden="true" />
+          <header className="menu-heading">
+            <h2 id="menu-heading">{servicesIntro.heading}</h2>
+            <p>{servicesIntro.subline}</p>
+          </header>
           <div className="menu-ghosts" aria-hidden="true">
             {bottles.map((b, i) => (
               <span key={b.id} data-ghost className="menu-ghost" style={{ opacity: i === 0 ? 1 : 0 }}>

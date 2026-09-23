@@ -172,9 +172,9 @@ function Bottles({ reduced, mobile }: { reduced: boolean; mobile: boolean }) {
     canvas.width = 2;
     canvas.height = 1;
     const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = mobile ? "#1a1d24" : "#121419";
+    ctx.fillStyle = mobile ? "#0d0d10" : "#000000";
     ctx.fillRect(0, 0, 1, 1);
-    ctx.fillStyle = "#1a1d24";
+    ctx.fillStyle = "#0d0d10";
     ctx.fillRect(1, 0, 1, 1);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -253,6 +253,39 @@ function Effects({ onReady }: { onReady: () => void }) {
   return null;
 }
 
+/**
+ * Compile every material before the first real frame. The bottles are hidden
+ * until their scene scrolls in, and three only compiles what's visible, so
+ * show everything for the compile, then restore. compileAsync uses the
+ * browser's parallel shader compile where it exists, keeping the main thread
+ * free while the page is still being read above.
+ */
+function Warmup() {
+  const { gl, scene, camera, invalidate } = useThree();
+  useEffect(() => {
+    let cancelled = false;
+    const hidden: THREE.Object3D[] = [];
+    scene.traverse((object) => {
+      if (!object.visible) {
+        hidden.push(object);
+        object.visible = true;
+      }
+    });
+    gl.compileAsync(scene, camera)
+      .catch(() => {})
+      .finally(() => {
+        hidden.forEach((object) => {
+          object.visible = false;
+        });
+        if (!cancelled) invalidate();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gl, scene, camera, invalidate]);
+  return null;
+}
+
 function ContextWatch({ onFailure }: { onFailure: () => void }) {
   const { gl } = useThree();
   useEffect(() => {
@@ -278,19 +311,20 @@ export default function BottleScenesCanvas({
 }) {
   return (
     <Canvas
-      camera={{ fov: 34, position: [0, 1.9, mobile ? 14 : 9.2] }}
-      dpr={[1, mobile ? 1.5 : 1.75]}
+      camera={{ fov: 34, position: [0, 1.9, mobile ? 17 : 9.2] }}
+      dpr={[1, 1.5]}
       frameloop={active ? "always" : "demand"}
       gl={{
         alpha: true,
-        antialias: true,
+        // The composer renders into its own multisampled target; canvas MSAA would be wasted fill.
+        antialias: false,
         powerPreference: "high-performance",
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.18,
       }}
       onCreated={({ camera, gl }) => {
         // On phones the bottle sits in the upper half, above the copy.
-        camera.lookAt(0, mobile ? -0.2 : 1.55, 0);
+        camera.lookAt(0, mobile ? 0.1 : 1.55, 0);
         gl.setClearColor(0x000000, 0);
         gl.domElement.setAttribute("aria-hidden", "true");
         gl.domElement.style.pointerEvents = "none";
@@ -318,12 +352,13 @@ export default function BottleScenesCanvas({
         far={1.6}
         blur={1.8}
         opacity={1}
-        resolution={mobile ? 256 : 512}
+        resolution={256}
         color="#000000"
       />
       <Suspense fallback={null}>
         <Bottles reduced={reduced} mobile={mobile} />
         <Effects onReady={onReady} />
+        <Warmup />
       </Suspense>
       <ContextWatch onFailure={onFailure} />
     </Canvas>

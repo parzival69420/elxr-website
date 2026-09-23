@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { global } from "@/lib/content";
+import { getLenis } from "@/lib/smoothScroll";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
@@ -23,6 +24,7 @@ export default function Nav() {
     if (!open) return;
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    getLenis()?.stop();
     const first = menu.current?.querySelector<HTMLAnchorElement>("a");
     first?.focus();
     const onKey = (event: KeyboardEvent) => {
@@ -51,6 +53,7 @@ export default function Nav() {
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = oldOverflow;
+      getLenis()?.start();
     };
   }, [open]);
   return (

@@ -1,4 +1,5 @@
 import Nav from "@/components/Nav";
+import SmoothScroll from "@/components/SmoothScroll";
 import Hero from "@/components/Hero";
 import Thesis from "@/components/Thesis";
 import Strips from "@/components/Strips";
@@ -22,6 +23,7 @@ export default function Home() {
             "document.documentElement.dataset.cityLoading='';document.documentElement.classList.add('js');",
         }}
       />
+      <SmoothScroll />
       <Nav />
       <Hero />
       <Thesis />

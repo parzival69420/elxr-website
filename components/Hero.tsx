@@ -1,6 +1,7 @@
 "use client";
 
 import "@/lib/rafFallback";
+import { scrollToTarget } from "@/lib/smoothScroll";
 import {
   Component,
   type CSSProperties,
@@ -58,7 +59,7 @@ export default function Hero() {
   });
   const onExplore = useCallback(() => {
     setExploring(true);
-    section.current?.scrollIntoView({ behavior: "instant" });
+    scrollToTarget(section.current, { immediate: true });
   }, []);
   const onCameraChange = useCallback((position: string) => {
     if (viewport.current) viewport.current.dataset.camera = position;
@@ -278,9 +279,7 @@ export default function Hero() {
           <button
             className="city-scroll-button"
             onClick={() =>
-              document.getElementById("thesis")?.scrollIntoView({
-                behavior: reduced ? "instant" : "smooth",
-              })
+              scrollToTarget(document.getElementById("thesis"), { immediate: reduced })
             }
           >
             <span>{hero.nextCue}</span>

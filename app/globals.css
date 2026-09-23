@@ -13,10 +13,10 @@
   --deep-butter: #e8c766;
   --plum: #4c1d95;
   /* Showcase theme: slate split panels, cream display type, one accent per screen */
-  --slate-deep: #121419; /* left panel, page base */
-  --slate: #1a1d24; /* right panel */
-  --slate-tile: #22262e; /* offset caption tiles */
-  --ghost: #22262f; /* oversized background words, a shade off the panel */
+  --slate-deep: #000000; /* pure black: page base, left panel of the formula scenes */
+  --slate: #0d0d10; /* near-black: right panel of the formula scenes */
+  --slate-tile: #141418; /* offset caption tiles */
+  --ghost: #141417; /* oversized background words, a shade off black */
   --cream: #f1e4cb; /* display headings */
   --muted: #9aa1ad; /* secondary copy on slate */
   --silver: #aeb4be; /* bento card fill, dark ink on top */
@@ -61,6 +61,17 @@
 
 html {
   scroll-behavior: smooth;
+}
+/* Lenis eases the scroll itself; native smooth scrolling would fight it. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+html.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+html.lenis.lenis-stopped {
+  overflow: clip;
 }
 
 @media (prefers-reduced-motion: reduce) {
