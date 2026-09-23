@@ -5,3 +5,7 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+.next-city*
+
+.next-bottles-production/

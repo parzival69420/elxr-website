@@ -55,7 +55,20 @@ export const loader = {
 export const hero = {
   headline: "The ELXR for marketing growth.", // [NAV: recommended option, alternates in content doc §4]
   subline: "A creative marketing agency engineering attention from New York.",
-  scrollCue: "Scroll to pour",
+  headlineLead: "The ELXR for",
+  headlineEmphasis: "marketing growth.",
+  eyebrow: "INDEPENDENT CREATIVE AGENCY",
+  scrollCue: "Scroll into the city",
+  intro: {
+    kicker: "Creative marketing agency, New York & New Jersey",
+    title: "Brewed in New York.",
+    caption:
+      "Ideas, content, launches and media for brands that can't outspend anyone. Engineered to earn attention, not rent it.",
+  },
+  primaryCta: { label: "Book a call", href: "#book" }, // [NAV: calendar link]
+  secondaryCta: { label: "See the work", href: "#work" },
+  exploreCta: "Explore the city",
+  nextCue: "What we do",
 };
 
 export const thesis = {
@@ -94,8 +107,18 @@ export const servicesIntro = {
   eyebrow: "THE MENU",
   heading: "Pick your potion.", // [NAV: recommended option]
   subline: "Every bottle is a service. Open one to see what it's done.",
-  dragCue: "Drag to browse",
-  hoverCue: "Open the bottle",
+  dragCue: "DRAG TO ROTATE",
+  hoverCue: "TOUCH OR CLICK TO OPEN",
+  collection: "THE ELXR COLLECTION / SIX FORMULAS",
+  loading: "Preparing your formula…",
+  fallback: "Explore each formula below.",
+  retry: "Reload bottles",
+  open: "Open the bottle",
+  close: "Seal the bottle",
+  details: "Explore the results",
+  inside: "What’s inside",
+  index: "THE FORMULA INDEX",
+  indexCue: "Six specialisms. One creative chemistry.",
 };
 
 export const bottles: Bottle[] = [
@@ -257,6 +280,78 @@ export const bottles: Bottle[] = [
     cta: { label: "Mix this into your brand →", href: "#contact" },
   },
 ];
+
+/**
+ * Selected work — flagship cases lifted from the bottle proof blocks.
+ * Sector descriptors only (hard rule 1). Every headline figure sits next to
+ * the mechanism that produced it and the constraint it was produced under (rule 3).
+ */
+export interface WorkCase {
+  sector: string;
+  service: string; // bottle id — links the case to its formula
+  title: string;
+  figure: string;
+  figureLabel: string;
+  constraint: string;
+  mechanism: string;
+  outcome: string;
+}
+
+export const work = {
+  heading: "Selected work.",
+  subline:
+    "Names stay under NDA. The mechanics don't. Full dashboards get walked through live on a call.",
+  cta: { label: "Ask for the full case studies", href: "#contact" },
+  cases: [
+    {
+      sector: "Global streaming",
+      service: "attention-engineering",
+      title: "A spy thriller launched through the TV remote.",
+      figure: "200K+",
+      figureLabel: "interactions in 48 hours",
+      constraint: "$0 video media budget",
+      mechanism:
+        "We hijacked the voice-assistant button on every Android TV remote. Banner ads carried a cryptic phrase, voice-SEO'd until it was the only result. Speak it, and the show's star handed you a top-secret mission.",
+      outcome:
+        "200,000+ interactions in 48 hours. $0 video spend. National creative award winner.",
+    },
+    {
+      sector: "Landmark cultural institution",
+      service: "launch-moments",
+      title: "An opening night the whole internet attended.",
+      figure: "#1",
+      figureLabel: "trend worldwide for 48 hours",
+      constraint: "One night, one red carpet, real time",
+      mechanism:
+        "A real-time newsroom on the ground: editors slicing carpet footage into vertical, sound-on edits the moment it happened, published before the press could file.",
+      outcome: "50M+ organic video views. 3B+ digital impressions.",
+    },
+    {
+      sector: "National financial services",
+      service: "content-engine",
+      title: "Finance content for people who skip finance content.",
+      figure: "40M+",
+      figureLabel: "views",
+      constraint: "An audience that actively avoids the category",
+      mechanism:
+        "A host-led engine mixing trend-jacks with deep explainers, influencer voices layered on for credibility, the full pipeline owned from concept to script to edit to amplification.",
+      outcome:
+        "2.2x growth for the business unit. Individual videos crossing 1M+ views on the regular.",
+    },
+    {
+      sector: "Global baby-care brand",
+      service: "attention-engineering",
+      title: "The morning paper, turned into an ingredient lab.",
+      figure: "2M+",
+      figureLabel: "impressions",
+      constraint: "Parents who don't trust ingredient labels",
+      mechanism:
+        "One scan of the most traditional medium in the market unfolded a 3D ingredient lab on the reader's floor: proof they could walk around.",
+      outcome:
+        "Campaign of the quarter. A CEO-level shout-out in the company-wide mail.",
+    },
+  ] as WorkCase[],
+};
 
 export const manifesto = {
   headline: "ATTENTION ISN'T BOUGHT. IT'S ENGINEERED.", // [NAV: recommended option]

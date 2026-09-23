@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "models:bottles": "node scripts/build-bottles.mjs",
+    "models:city": "node scripts/build-city.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.3",

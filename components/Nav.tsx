@@ -1,35 +1,117 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { global } from "@/lib/content";
 
 export default function Nav() {
+  const [open, setOpen] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  useEffect(() => {
+    const update = () => {
+      const hero = document.getElementById("top");
+      setPastHero(
+        !!hero && hero.getBoundingClientRect().bottom < window.innerHeight,
+      );
+    };
+    window.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+  const button = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const first = menu.current?.querySelector<HTMLAnchorElement>("a");
+    first?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        button.current?.focus();
+      }
+      if (event.key !== "Tab") return;
+      const links = menu.current?.querySelectorAll<HTMLAnchorElement>("a");
+      if (!links?.length) return;
+      if (event.shiftKey && document.activeElement === links[0]) {
+        event.preventDefault();
+        button.current?.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === links[links.length - 1]
+      ) {
+        event.preventDefault();
+        button.current?.focus();
+      } else if (event.shiftKey && document.activeElement === button.current) {
+        event.preventDefault();
+        links[links.length - 1].focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = oldOverflow;
+    };
+  }, [open]);
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
-      <nav
-        className="glass mx-auto mt-4 flex w-[min(64rem,calc(100%-2rem))] items-center justify-between px-5 py-3"
-        aria-label="Main"
-      >
-        {/* [NAV: logo SVG replaces this wordmark when supplied] */}
-        <a href="#top" className="text-lg font-black tracking-[0.2em]">
-          ELXR
+    <header className={`site-header ${pastHero ? "is-past-hero" : ""}`}>
+      <nav className="city-nav" aria-label="Main">
+        <a
+          href="#top"
+          className="elxr-wordmark"
+          aria-label="ELXR Creative home"
+          onClick={() => setOpen(false)}
+        >
+          ELXR<span>CREATIVE</span>
         </a>
-        <ul className="hidden items-center gap-7 text-sm font-medium md:flex">
+        <ul className="nav-links">
           {global.navLinks.map((link) => (
             <li key={link.href}>
-              <a
-                href={link.href}
-                className="text-text/80 transition-colors hover:text-lavender"
-              >
-                {link.label}
-              </a>
+              <a href={link.href}>{link.label}</a>
             </li>
           ))}
         </ul>
-        <a
-          href={global.navCta.href}
-          className="rounded-full bg-purple px-5 py-2 text-sm font-bold text-text transition-transform hover:scale-105"
-        >
-          {global.navCta.label}
-        </a>
+        <div className="nav-actions">
+          <a
+            href={global.navCta.href}
+            className="nav-contact"
+            onClick={() => setOpen(false)}
+          >
+            {global.navCta.label}
+          </a>
+          <button
+            ref={button}
+            className={`menu-toggle ${open ? "is-open" : ""}`}
+            onClick={() => setOpen(!open)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            aria-controls="city-menu"
+          >
+            <span />
+            <span />
+          </button>
+        </div>
       </nav>
+      {open && (
+        <div
+          ref={menu}
+          id="city-menu"
+          className="city-menu"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation"
+        >
+          <p className="city-eyebrow">FIND YOUR FORMULA</p>
+          {global.navLinks.map((link, index) => (
+            <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+              <small>0{index + 1}</small>
+              {link.label}
+              <span aria-hidden="true">↗</span>
+            </a>
+          ))}
+          <p className="menu-footer">Brewed in New York. Served everywhere.</p>
+        </div>
+      )}
     </header>
   );
 }

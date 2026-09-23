@@ -4,9 +4,9 @@ import { useState } from "react";
 import { contact } from "@/lib/content";
 
 export default function Contact() {
-  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">(
-    "idle",
-  );
+  const [status, setStatus] = useState<
+    "idle" | "sending" | "success" | "error"
+  >("idle");
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,31 +27,32 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="relative z-10 py-24 md:py-36">
+    <section id="contact" className="contact-section relative z-10">
       <span id="book" aria-hidden="true" />
-      <div className="glass mx-auto w-[min(56rem,calc(100%-2rem))] p-8 md:p-14">
-        <p className="text-xs font-bold uppercase tracking-[0.35em] text-butter">
-          {contact.eyebrow}
-        </p>
-        <h2 className="mt-4 text-5xl font-black md:text-7xl">{contact.heading}</h2>
-        <p className="mt-5 max-w-xl text-lg text-text/75">{contact.body}</p>
+      <div className="contact-layout">
+        <div className="contact-intro">
+          <p className="section-kicker">{contact.eyebrow}</p>
+          <h2 className="contact-heading">{contact.heading}</h2>
+          <p className="mt-5 max-w-xl text-lg text-text/75">{contact.body}</p>
 
-        <div className="mt-8 flex flex-wrap items-center gap-5">
-          <a
-            href={contact.primaryCta.href}
-            className="rounded-full bg-purple px-7 py-3 font-bold transition-transform hover:scale-105"
-          >
-            {contact.primaryCta.label}
-          </a>
-          <a
-            href={`mailto:${contact.email}`}
-            className="font-medium text-lavender underline-offset-4 hover:underline"
-          >
-            {contact.email}
-          </a>
+          <div className="mt-8 flex flex-wrap items-center gap-5">
+            <a href={contact.primaryCta.href} className="btn-primary">
+              {contact.primaryCta.label}
+            </a>
+            <a
+              href={`mailto:${contact.email}`}
+              className="font-medium text-lavender underline-offset-4 hover:underline"
+            >
+              {contact.email}
+            </a>
+          </div>
+
+          <p className="mt-10 text-sm text-text/65">{contact.line}</p>
         </div>
-
-        <form onSubmit={onSubmit} className="mt-12 grid gap-5 md:grid-cols-2">
+        <form
+          onSubmit={onSubmit}
+          className="contact-form grid gap-6 md:grid-cols-2"
+        >
           <label className="flex flex-col gap-2 text-sm font-medium">
             {contact.form.fields.name}
             <input
@@ -91,11 +92,15 @@ export default function Contact() {
             <button
               type="submit"
               disabled={status === "sending"}
-              className="rounded-full bg-purple px-8 py-3 font-bold transition-transform hover:scale-105 disabled:opacity-50"
+              className="btn-primary disabled:opacity-50"
             >
               {contact.form.submit}
             </button>
-            <p role="status" aria-live="polite" className="mt-4 text-sm font-medium">
+            <p
+              role="status"
+              aria-live="polite"
+              className="mt-4 text-sm font-medium"
+            >
               {status === "success" && (
                 <span className="text-lavender">{contact.form.success}</span>
               )}
@@ -105,8 +110,6 @@ export default function Contact() {
             </p>
           </div>
         </form>
-
-        <p className="mt-10 text-sm text-text/55">{contact.line}</p>
       </div>
     </section>
   );

@@ -4,7 +4,10 @@ export default function Strips() {
   return (
     <section className="relative z-10 space-y-16 py-12">
       {/* category strip — scrolling marquee (second copy is decorative) */}
-      <div className="overflow-hidden border-y border-white/5 py-5" aria-label="Sectors served">
+      <div
+        className="overflow-hidden border-y border-white/5 py-5"
+        aria-label="Sectors served"
+      >
         <div className="marquee-track flex w-max items-center gap-8 whitespace-nowrap text-sm font-medium tracking-wide text-text/60">
           {[false, true].map((decorative) => (
             <span
@@ -15,7 +18,9 @@ export default function Strips() {
               {strips.categories.map((c) => (
                 <span key={c} className="flex items-center gap-8">
                   {c}
-                  <span className="text-butter" aria-hidden="true">◆</span>
+                  <span className="text-butter" aria-hidden="true">
+                    ◆
+                  </span>
                 </span>
               ))}
             </span>
@@ -26,8 +31,11 @@ export default function Strips() {
       {/* numbers strip — glass tiles */}
       <div className="mx-auto grid w-[min(72rem,calc(100%-3rem))] grid-cols-2 gap-4 lg:grid-cols-4">
         {strips.numbers.map((n) => (
-          <div key={n.value} className="glass flex flex-col gap-2 p-6 md:p-8">
-            <span className="text-3xl font-black text-lavender md:text-5xl">
+          <div
+            key={n.value}
+            className="metric-tile flex flex-col gap-2 p-6 md:p-8"
+          >
+            <span className="text-3xl font-medium tracking-tight text-text md:text-5xl">
               {n.value}
             </span>
             <span className="text-sm text-text/65">{n.caption}</span>

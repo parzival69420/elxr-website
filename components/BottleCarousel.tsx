@@ -1,218 +1,291 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import dynamic from "next/dynamic";
+import {
+  Component,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { useReducedMotion } from "framer-motion";
 import { bottles, servicesIntro } from "@/lib/content";
-import BottleSVG from "./BottleSVG";
+import { bottleColors as colors } from "@/lib/bottles";
 
-/**
- * Horizontal drag carousel (Framer Motion) with full keyboard support:
- * arrow keys move the selection, Enter/Space opens a bottle into its
- * service detail panel. Under prefers-reduced-motion it degrades to a
- * scroll-snap list. Full service content also lives in the static
- * ServiceDetails section, so nothing here is the only copy of anything.
- */
+const BottleStage = dynamic(() => import("./bottles/BottleStage"), {
+  ssr: false,
+});
+
+class SceneBoundary extends Component<
+  { children: ReactNode; onFailure: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFailure();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 export default function BottleCarousel() {
-  // Bottle 1 (Attention Engineering) is the hero bottle, centered by default.
-  const [active, setActive] = useState(0);
-  const [open, setOpen] = useState<number | null>(null);
-  const reduced = useReducedMotion();
-  const regionRef = useRef<HTMLDivElement>(null);
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      setActive((a) => Math.min(bottles.length - 1, a + 1));
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      setActive((a) => Math.max(0, a - 1));
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      setOpen((o) => (o === active ? null : active));
-    } else if (e.key === "Escape") {
-      setOpen(null);
-    }
-  };
-
-  const openBottle = bottles[open ?? -1];
-
-  if (reduced) {
-    /* Reduced motion: a plain scroll-snap list, no drag, no spring. */
-    return (
-      <div className="no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto px-6 py-8">
-        {bottles.map((b) => (
-          <a
-            key={b.id}
-            href={`#detail-${b.id}`}
-            className="glass flex w-64 shrink-0 snap-center flex-col items-center gap-4 p-8"
+  const [active, setActive] = useState(1);
+  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [inView, setInView] = useState(false);
+  const [mobile, setMobile] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const reduced = !!useReducedMotion();
+  const region = useRef<HTMLDivElement>(null);
+  const rotation = useRef(0);
+  const gesture = useRef({ x: 0, startRotation: 0, down: false, moved: false });
+  const onReady = useCallback(() => setReady(true), []);
+  const onFailure = useCallback(() => setFailed(true), []);
+  const select = useCallback((index: number) => {
+    setActive(index);
+    setOpen(false);
+    rotation.current = 0;
+  }, []);
+  useEffect(() => {
+    const mq = matchMedia("(max-width: 700px)");
+    const resize = () => setMobile(mq.matches);
+    resize();
+    mq.addEventListener("change", resize);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setInView(entry.isIntersecting);
+        if (entry.isIntersecting) setMounted(true);
+      },
+      { rootMargin: "180px" },
+    );
+    if (region.current) observer.observe(region.current);
+    return () => {
+      observer.disconnect();
+      mq.removeEventListener("change", resize);
+    };
+  }, []);
+  const bottle = bottles[active];
+  return (
+    <div
+      className="bottle-showcase"
+      style={{ "--formula-color": colors[active] } as CSSProperties}
+    >
+      <div
+        className={`bottle-stage ${failed ? "is-failed" : ""}`}
+        ref={region}
+        data-active-formula={active + 1}
+        data-open={open}
+        data-ready={ready}
+      >
+        <div className="bottle-stage-meta">
+          <span>{servicesIntro.collection}</span>
+          <span>0{active + 1} / 06</span>
+        </div>
+        <div
+          className="bottle-canvas"
+          role="group"
+          aria-label={`${bottle.name} 3D bottle. Drag to rotate. Arrow keys rotate, Enter opens, Home resets.`}
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+              event.preventDefault();
+              rotation.current += event.key === "ArrowLeft" ? -0.3 : 0.3;
+            } else if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setOpen((value) => !value);
+            } else if (event.key === "Home") {
+              event.preventDefault();
+              rotation.current = 0;
+            } else if (event.key === "Escape") setOpen(false);
+          }}
+          onPointerDown={(event) => {
+            gesture.current = {
+              x: event.clientX,
+              startRotation: rotation.current,
+              down: true,
+              moved: false,
+            };
+          }}
+          onPointerMove={(event) => {
+            if (!gesture.current.down) return;
+            const distance = event.clientX - gesture.current.x;
+            if (Math.abs(distance) > 6) gesture.current.moved = true;
+            if (gesture.current.moved)
+              rotation.current =
+                gesture.current.startRotation + distance * 0.012;
+          }}
+          onPointerUp={() => {
+            gesture.current.down = false;
+          }}
+          onPointerCancel={() => {
+            gesture.current.down = false;
+          }}
+          onPointerLeave={() => {
+            gesture.current.down = false;
+            setHovered(null);
+          }}
+        >
+          {mounted && !failed && (
+            <SceneBoundary onFailure={onFailure}>
+              <BottleStage
+                active={active}
+                open={open}
+                hovered={hovered}
+                rotation={rotation}
+                reduced={reduced}
+                mobile={mobile}
+                inView={inView}
+                onReady={onReady}
+                onFailure={onFailure}
+                onHover={setHovered}
+                onSelect={(index) => {
+                  if (gesture.current.moved) return;
+                  if (index === active) setOpen((value) => !value);
+                  else select(index);
+                }}
+              />
+            </SceneBoundary>
+          )}
+          {(!ready || failed) && (
+            <div className="bottle-loading" role="status">
+              {!failed && (
+                <span className="bottle-loading-orbit" aria-hidden="true" />
+              )}
+              <p>{failed ? servicesIntro.fallback : servicesIntro.loading}</p>
+              {failed && (
+                <button
+                  className="formula-open"
+                  type="button"
+                  onClick={() => {
+                    setReady(false);
+                    setFailed(false);
+                  }}
+                >
+                  {servicesIntro.retry}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="bottle-stage-controls">
+          <button
+            type="button"
+            aria-label="Previous bottle"
+            onClick={() =>
+              select((active + bottles.length - 1) % bottles.length)
+            }
           >
-            <BottleSVG id={`rm-${b.id}`} color={b.liquidColor} className="h-40 w-auto" />
-            <span className="text-lg font-bold">{b.name}</span>
-            <span className="text-center text-sm text-lavender">{b.tagline}</span>
-          </a>
+            ←
+          </button>
+          <p>
+            {servicesIntro.dragCue}
+            <span>{servicesIntro.hoverCue}</span>
+          </p>
+          <button
+            type="button"
+            aria-label="Next bottle"
+            onClick={() => select((active + 1) % bottles.length)}
+          >
+            →
+          </button>
+        </div>
+      </div>
+      <div
+        className="bottle-formulas"
+        role="tablist"
+        aria-label="Choose a service formula"
+      >
+        {bottles.map((item, index) => (
+          <button
+            type="button"
+            key={item.id}
+            role="tab"
+            id={`formula-tab-${index}`}
+            aria-controls="formula-panel"
+            aria-selected={index === active}
+            tabIndex={index === active ? 0 : -1}
+            onClick={() => select(index)}
+            onKeyDown={(event) => {
+              let next = index;
+              if (event.key === "ArrowRight")
+                next = (index + 1) % bottles.length;
+              else if (event.key === "ArrowLeft")
+                next = (index + bottles.length - 1) % bottles.length;
+              else if (event.key === "Home") next = 0;
+              else if (event.key === "End") next = bottles.length - 1;
+              else return;
+              event.preventDefault();
+              select(next);
+              document.getElementById(`formula-tab-${next}`)?.focus();
+            }}
+          >
+            <span className="formula-number" style={{ color: colors[index] }}>
+              0{index + 1}
+            </span>
+            <span>{item.name}</span>
+            <span
+              className="formula-dot"
+              style={{ background: colors[index] }}
+            />
+          </button>
         ))}
       </div>
-    );
-  }
-
-  const SPACING = 260;
-
-  return (
-    <div>
       <div
-        ref={regionRef}
-        role="listbox"
-        aria-label="Services — the six bottles"
-        aria-activedescendant={`bottle-${bottles[active].id}`}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        className="relative h-[26rem] select-none overflow-hidden outline-offset-8"
+        id="formula-panel"
+        className="formula-panel"
+        role="tabpanel"
+        aria-labelledby={`formula-tab-${active}`}
       >
-        <motion.div
-          className="absolute left-1/2 top-8 flex cursor-grab items-start active:cursor-grabbing"
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.12}
-          onDragEnd={(_, info) => {
-            const delta = Math.round(-info.offset.x / SPACING);
-            setActive((a) => Math.max(0, Math.min(bottles.length - 1, a + delta)));
-          }}
-          animate={{ x: -active * SPACING }}
-          transition={{ type: "spring", stiffness: 260, damping: 30 }}
-        >
-          {bottles.map((b, i) => {
-            const isActive = i === active;
-            return (
-              <motion.button
-                key={b.id}
-                id={`bottle-${b.id}`}
-                role="option"
-                aria-selected={isActive}
-                onClick={() => {
-                  if (i === active) setOpen(open === i ? null : i);
-                  else setActive(i);
-                }}
-                className="group flex w-[260px] shrink-0 flex-col items-center gap-3 px-6 focus-visible:outline-none"
-                animate={{
-                  scale: isActive ? 1 : 0.72,
-                  opacity: isActive ? 1 : 0.45,
-                  y: isActive ? 0 : 28,
-                }}
-                transition={{ type: "spring", stiffness: 260, damping: 30 }}
-                style={{ marginLeft: i === 0 ? -130 : 0 }}
-                tabIndex={-1}
-              >
-                <BottleSVG
-                  id={b.id}
-                  color={b.liquidColor}
-                  fill={isActive ? 0.78 : 0.6}
-                  className="h-56 w-auto drop-shadow-[0_0_40px_rgba(112,56,224,0.25)]"
-                />
-                <span className="text-lg font-bold">{b.name}</span>
-                <span className="text-center text-sm font-medium text-lavender">
-                  {b.tagline}
-                </span>
-                <span className="text-xs font-medium uppercase tracking-[0.2em] text-butter opacity-0 transition-opacity group-hover:opacity-100">
-                  {isActive ? servicesIntro.hoverCue : ""}
-                </span>
-              </motion.button>
-            );
-          })}
-        </motion.div>
+        <div className="formula-title">
+          <p className="section-kicker">{bottle.tagline}</p>
+          <h3>{bottle.name}</h3>
+        </div>
+        <div className="formula-description">
+          <p>{bottle.oneLiner}</p>
+          <div className="formula-actions">
+            <button
+              type="button"
+              className="formula-open"
+              aria-expanded={open}
+              aria-controls="formula-ingredients"
+              onClick={() => setOpen((value) => !value)}
+            >
+              {open ? servicesIntro.close : servicesIntro.open}
+              <span aria-hidden="true">{open ? "−" : "+"}</span>
+            </button>
+            <a
+              href={`#detail-${bottle.id}`}
+              onClick={() => {
+                const detail = document.getElementById(`detail-${bottle.id}`);
+                if (detail instanceof HTMLDetailsElement) detail.open = true;
+              }}
+            >
+              {servicesIntro.details} <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
       </div>
-
-      {/* prev / next + drag cue */}
-      <div className="flex items-center justify-center gap-6">
-        <button
-          onClick={() => setActive((a) => Math.max(0, a - 1))}
-          disabled={active === 0}
-          aria-label="Previous bottle"
-          className="glass flex h-11 w-11 items-center justify-center text-lg text-lavender disabled:opacity-30"
-        >
-          ←
-        </button>
-        <span className="text-xs font-medium uppercase tracking-[0.25em] text-text/50">
-          {servicesIntro.dragCue}
-        </span>
-        <button
-          onClick={() => setActive((a) => Math.min(bottles.length - 1, a + 1))}
-          disabled={active === bottles.length - 1}
-          aria-label="Next bottle"
-          className="glass flex h-11 w-11 items-center justify-center text-lg text-lavender disabled:opacity-30"
-        >
-          →
-        </button>
+      <div
+        id="formula-ingredients"
+        hidden={!open}
+        className="formula-ingredients"
+      >
+        <p className="section-kicker">{servicesIntro.inside}</p>
+        <ul>
+          {bottle.whatsInside.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <a href={bottle.cta.href}>{bottle.cta.label}</a>
       </div>
-
-      {/* the open interaction — a bottle expands into its detail panel */}
-      <AnimatePresence>
-        {openBottle && (
-          <motion.div
-            key={openBottle.id}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="mx-auto mt-10 w-[min(60rem,calc(100%-2rem))] overflow-hidden"
-          >
-            <div className="glass p-8 md:p-12">
-              <div className="flex flex-col gap-8 md:flex-row">
-                <BottleSVG
-                  id={`open-${openBottle.id}`}
-                  color={openBottle.liquidColor}
-                  fill={0.85}
-                  className="mx-auto h-48 w-auto shrink-0 md:mx-0"
-                />
-                <div>
-                  <h3 className="text-3xl font-black">{openBottle.name}</h3>
-                  <p className="mt-1 text-lg font-bold text-lavender">
-                    {openBottle.tagline}
-                  </p>
-                  <p className="mt-4 leading-relaxed text-text/80">
-                    {openBottle.oneLiner}
-                  </p>
-                  {openBottle.bodyCopy?.map((p, i) => (
-                    <p key={i} className="mt-3 leading-relaxed text-text/80">
-                      {p}
-                    </p>
-                  ))}
-                  <h4 className="mt-6 text-xs font-bold uppercase tracking-[0.3em] text-butter">
-                    What&apos;s inside
-                  </h4>
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {openBottle.whatsInside.map((w) => (
-                      <li
-                        key={w}
-                        className="rounded-full border border-white/10 px-4 py-1.5 text-sm text-text/80"
-                      >
-                        {w}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {openBottle.proof.length > 0 && (
-                <div className="mt-10 grid gap-6 md:grid-cols-2">
-                  {openBottle.proof.map((p, i) => (
-                    <blockquote key={i} className="border-l-2 border-purple pl-5">
-                      <p className="text-sm leading-relaxed text-text/75">{p.body}</p>
-                      <p className="mt-3 text-sm font-bold text-lavender">{p.stat}</p>
-                    </blockquote>
-                  ))}
-                </div>
-              )}
-
-              <a
-                href={openBottle.cta.href}
-                className="mt-10 inline-block rounded-full bg-purple px-7 py-3 font-bold transition-transform hover:scale-105"
-              >
-                {openBottle.cta.label}
-              </a>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

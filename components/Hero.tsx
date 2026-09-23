@@ -1,116 +1,419 @@
 "use client";
 
 import "@/lib/rafFallback";
-import { useEffect, useRef, useState } from "react";
+import {
+  Component,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { hero } from "@/lib/content";
-import { pourProgress } from "@/lib/pour";
+import {
+  cityJourney,
+  signalCityReady,
+  landmarks,
+  type LandmarkId,
+  type CityCommand,
+  type CityAction,
+} from "@/lib/city";
+import ManhattanMap from "./city/ManhattanMap";
+import Loader from "./Loader";
 
 const CityCanvas = dynamic(() => import("./city/CityCanvas"), { ssr: false });
+class SceneBoundary extends Component<
+  { children: ReactNode; onFailure: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFailure();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
-/**
- * The one orchestrated moment on the page. A 300vh scroll region with a
- * sticky viewport; GSAP ScrollTrigger scrubs a single progress value that
- * drives the pour shader AND the city liquid spread (section 5).
- *
- * Under 768px the shader pour is replaced by a CSS gradient wipe.
- * prefers-reduced-motion turns the pour into a simple cross-fade.
- */
 export default function Hero() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const headlineRef = useRef<HTMLDivElement>(null);
-  const wipeRef = useRef<HTMLDivElement>(null);
-  const [mode, setMode] = useState<"shader" | "wipe" | "fade" | null>(null);
-
+  const section = useRef<HTMLElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const [settings, setSettings] = useState<{
+    mobile: boolean;
+    reduced: boolean;
+  } | null>(null);
+  const [available, setAvailable] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [stage, setStage] = useState(0);
+  const [inView, setInView] = useState(true);
+  const [exploring, setExploring] = useState(false);
+  const [selected, setSelected] = useState<LandmarkId | null>(null);
+  const [command, setCommand] = useState<CityCommand>({
+    id: 0,
+    action: "reset",
+  });
+  const onExplore = useCallback(() => {
+    setExploring(true);
+    const hero = section.current;
+    if (hero)
+      window.scrollTo({
+        top:
+          hero.getBoundingClientRect().top +
+          window.scrollY +
+          (hero.offsetHeight - window.innerHeight) * 0.92,
+        behavior: "instant",
+      });
+  }, []);
+  const onSelect = useCallback(
+    (id: LandmarkId) => {
+      setSelected(id);
+      onExplore();
+    },
+    [onExplore],
+  );
+  const onCameraChange = useCallback((position: string) => {
+    if (viewport.current) viewport.current.dataset.camera = position;
+  }, []);
+  const issueCommand = (action: CityAction) => {
+    if (action === "reset") {
+      setExploring(false);
+      setSelected(null);
+    } else onExplore();
+    setCommand((previous) => ({ id: previous.id + 1, action }));
+  };
+  const selectedLandmark = landmarks.find(
+    (landmark) => landmark.id === selected,
+  );
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mobile = window.matchMedia("(max-width: 767px)").matches;
-    setMode(reduced ? "fade" : mobile ? "wipe" : "shader");
+    if (stage !== 2) {
+      setExploring(false);
+      setSelected(null);
+    }
+  }, [stage]);
+  const [motionOverride, setMotionOverride] = useState<boolean | null>(null);
+  const reduced = motionOverride ?? settings?.reduced ?? false;
+  const onReady = useCallback(() => setReady(true), []);
+  const onFailure = useCallback(() => {
+    setAvailable(false);
+    setReady(true);
+    signalCityReady();
   }, []);
 
   useEffect(() => {
-    if (!mode || !sectionRef.current) return;
-    gsap.registerPlugin(ScrollTrigger);
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      setSettings({ mobile: mobile.matches, reduced: reduced.matches });
+    };
+    update();
+    mobile.addEventListener("change", update);
+    reduced.addEventListener("change", update);
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("webgl2");
+    if (!context) onFailure();
+    else context.getExtension("WEBGL_lose_context")?.loseContext();
+    return () => {
+      mobile.removeEventListener("change", update);
+      reduced.removeEventListener("change", update);
+    };
+  }, [onFailure]);
 
-    const st = ScrollTrigger.create({
-      trigger: sectionRef.current,
+  useEffect(() => {
+    if (ready) return;
+    const timeout = setTimeout(onFailure, 12000);
+    return () => clearTimeout(timeout);
+  }, [ready, onFailure]);
+
+  useEffect(() => {
+    if (!section.current) return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setInView(entry.isIntersecting),
+    );
+    observer.observe(section.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+    const update = (p: number) => {
+      cityJourney.progress = p;
+      const view = viewport.current;
+      if (!view) return;
+      const mapOpacity = 1 - Math.min(1, p / 0.25);
+      const skylineOpacity = Math.min(1, Math.max(0, (p - 0.59) / 0.2));
+      view.style.setProperty("--map-opacity", String(mapOpacity));
+      view.style.setProperty("--skyline-opacity", String(skylineOpacity));
+      view.style.setProperty("--journey-progress", `${p * 100}%`);
+      view.dataset.stage = p > 0.66 ? "skyline" : p > 0.12 ? "descent" : "map";
+      setStage(p > 0.66 ? 2 : p > 0.12 ? 1 : 0);
+    };
+    const trigger = ScrollTrigger.create({
+      trigger: section.current,
       start: "top top",
       end: "bottom bottom",
-      scrub: true,
-      onUpdate: (self) => {
-        pourProgress.value = self.progress;
-
-        // headline + scroll cue dissolve as the flood begins
-        if (headlineRef.current) {
-          const fade = 1 - Math.min(1, self.progress / 0.22);
-          headlineRef.current.style.opacity = String(fade);
-          headlineRef.current.style.transform = `translateY(${self.progress * -60}px)`;
-        }
-
-        // DOM fallbacks for the pour itself
-        if (wipeRef.current) {
-          if (mode === "fade") {
-            wipeRef.current.style.opacity = String(
-              1 - Math.min(1, self.progress * 2),
-            );
-          } else if (mode === "wipe") {
-            const p = self.progress;
-            const flood = Math.min(1, p * 2);
-            const recede = Math.max(0, (p - 0.5) * 2);
-            // rises purple, then slides away upward
-            wipeRef.current.style.background = `linear-gradient(to top, var(--purple) ${flood * 115 - recede * 130}%, transparent ${flood * 115 - recede * 130 + 12}%), linear-gradient(var(--base), var(--base))`;
-            wipeRef.current.style.opacity = p > 0.55 ? String(1 - recede) : "1";
-          }
-        }
-      },
+      onUpdate: (self) => update(self.progress),
+      onRefresh: (self) => update(self.progress),
     });
+    update(trigger.progress);
+    return () => {
+      trigger.kill();
+      cityJourney.progress = 0;
+    };
+  }, []);
 
-    return () => st.kill();
-  }, [mode]);
+  const travelTo = (progress: number) => {
+    if (!section.current) return;
+    const top = section.current.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({
+      top: top + (section.current.offsetHeight - window.innerHeight) * progress,
+      behavior: reduced ? "instant" : "smooth",
+    });
+  };
 
   return (
-    <section ref={sectionRef} id="top" className="relative h-[300vh]">
-      <div className="sticky top-0 h-screen overflow-hidden">
-        {/* the single WebGL context */}
-        {mode && (
-          <CityCanvas mobile={mode !== "shader"} withPour={mode === "shader"} />
+    <section
+      ref={section}
+      id="top"
+      className="city-journey"
+      aria-label="Explore ELXR's New York"
+    >
+      <div
+        ref={viewport}
+        className={`city-viewport ${ready ? "is-ready" : ""} ${!available ? "scene-fallback" : ""} ${exploring ? "is-exploring" : ""}`}
+        data-stage="map"
+      >
+        <div className="city-map-fallback">
+          <ManhattanMap />
+        </div>
+        {settings && available && (
+          <div className={`city-live-scene ${ready ? "is-visible" : ""}`}>
+            <SceneBoundary onFailure={onFailure}>
+              <CityCanvas
+                mobile={settings.mobile}
+                reduced={reduced}
+                active={inView}
+                interactive={stage === 2}
+                exploring={exploring}
+                selected={selected}
+                command={command}
+                onExplore={onExplore}
+                onSelect={onSelect}
+                onCameraChange={onCameraChange}
+                onReady={onReady}
+                onFailure={onFailure}
+              />
+            </SceneBoundary>
+          </div>
         )}
-
-        {/* CSS fallback layer (mobile wipe / reduced-motion cross-fade) */}
-        {mode && mode !== "shader" && (
-          <div
-            ref={wipeRef}
-            className="pointer-events-none absolute inset-0"
-            style={{ background: "var(--base)" }}
-            aria-hidden="true"
-          />
-        )}
-
-        {/* headline block */}
-        <div
-          ref={headlineRef}
-          className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
-        >
-          <h1 className="max-w-4xl text-5xl font-black leading-[1.02] tracking-tight md:text-7xl lg:text-8xl">
-            {hero.headline}
-          </h1>
-          <p className="mt-6 max-w-xl text-lg font-medium text-text/75 md:text-xl">
-            {hero.subline}
+        {!available && (
+          <p className="city-webgl-note">
+            The 3D city needs WebGL. Everything else on this page works
+            without it.
           </p>
+        )}
+        <h1 className="sr-only">
+          {hero.headline} {hero.subline}
+        </h1>
+        <div className="city-vignette" aria-hidden="true" />
+
+        <div className="city-topline">
+          <button
+            className="motion-toggle"
+            aria-pressed={!reduced}
+            onClick={() => {
+              setMotionOverride(!reduced);
+              setReady(true);
+              signalCityReady();
+            }}
+            aria-label={reduced ? "Enable full motion" : "Reduce motion"}
+          >
+            MOTION {reduced ? "OFF" : "ON"}
+            <span className="signal-dot" />
+          </button>
         </div>
 
-        {/* scroll cue */}
-        <div
-          className="absolute inset-x-0 bottom-8 flex flex-col items-center gap-2"
-          aria-hidden="true"
-        >
-          <span className="text-xs font-medium uppercase tracking-[0.3em] text-lavender">
-            {hero.scrollCue}
-          </span>
-          <span className="block h-8 w-px bg-gradient-to-b from-lavender to-transparent" />
+        <div className="city-intro" aria-hidden={stage !== 0}>
+          <p className="city-intro-kicker">{hero.intro.kicker}</p>
+          <p className="city-intro-title">{hero.intro.title}</p>
+          <p className="city-intro-caption">{hero.intro.caption}</p>
+          <div className="hero-ctas">
+            <a
+              href={hero.primaryCta.href}
+              className="btn-primary"
+              tabIndex={stage === 0 ? 0 : -1}
+            >
+              {hero.primaryCta.label}
+            </a>
+            <a
+              href={hero.secondaryCta.href}
+              className="btn-secondary"
+              tabIndex={stage === 0 ? 0 : -1}
+            >
+              {hero.secondaryCta.label}
+            </a>
+          </div>
         </div>
+        <div className="city-map-labels" aria-hidden="true">
+          <span className="map-label map-hudson">HUDSON RIVER</span>
+          <span className="map-label map-east">EAST RIVER</span>
+          <span className="map-label map-park">CENTRAL PARK</span>
+          <span className="map-destination">
+            <span className="destination-dot" /> TIMES SQUARE
+          </span>
+          <span className="map-label map-downtown">MIDTOWN MANHATTAN</span>
+        </div>
+
+        <div className="city-skyline-copy" aria-hidden={stage !== 2}>
+          <h2>
+            {hero.headlineLead}
+            <br />
+            <em>{hero.headlineEmphasis}</em>
+          </h2>
+          <p className="city-subline">{hero.subline}</p>
+          <div className="hero-ctas">
+            <a
+              href={hero.primaryCta.href}
+              className="btn-primary"
+              tabIndex={stage === 2 ? 0 : -1}
+            >
+              {hero.primaryCta.label}
+            </a>
+            {available && (
+              <button
+                onClick={onExplore}
+                tabIndex={stage === 2 ? 0 : -1}
+                className="btn-secondary"
+              >
+                {hero.exploreCta}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {stage === 2 && available && exploring && (
+          <>
+            <div
+              className="city-interaction-tools"
+              aria-label="3D city controls"
+            >
+              <p className="city-drag-hint">
+                Drag to look around, or pick a landmark.
+              </p>
+              <div className="city-tool-row">
+                <div className="city-landmark-buttons">
+                  {landmarks.map((landmark) => (
+                    <button
+                      key={landmark.id}
+                      onClick={() => onSelect(landmark.id)}
+                      aria-pressed={selected === landmark.id}
+                    >
+                      {landmark.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="city-camera-buttons">
+                  <button
+                    aria-label="Rotate city left"
+                    onClick={() => issueCommand("left")}
+                  >
+                    ←
+                  </button>
+                  <button
+                    aria-label="Rotate city right"
+                    onClick={() => issueCommand("right")}
+                  >
+                    →
+                  </button>
+                  <button
+                    aria-label="Zoom in"
+                    onClick={() => issueCommand("zoom-in")}
+                  >
+                    +
+                  </button>
+                  <button
+                    aria-label="Zoom out"
+                    onClick={() => issueCommand("zoom-out")}
+                  >
+                    −
+                  </button>
+                  <button
+                    className="city-reset"
+                    onClick={() => issueCommand("reset")}
+                  >
+                    Done exploring
+                  </button>
+                </div>
+              </div>
+            </div>
+            {selectedLandmark && (
+              <aside
+                className="city-landmark-card"
+                aria-label={selectedLandmark.label}
+              >
+                <button
+                  className="landmark-close"
+                  onClick={() => setSelected(null)}
+                  aria-label="Close landmark details"
+                >
+                  ×
+                </button>
+                <p className="city-eyebrow">{selectedLandmark.kicker}</p>
+                <h3>{selectedLandmark.label}</h3>
+                <p>{selectedLandmark.description}</p>
+                <a href={selectedLandmark.href}>
+                  {selectedLandmark.cta} <span aria-hidden="true">↗</span>
+                </a>
+              </aside>
+            )}
+          </>
+        )}
+
+        <div className="journey-controls" aria-label="City viewpoints">
+          <button
+            onClick={() => travelTo(0)}
+            aria-label="View Manhattan map"
+            aria-pressed={stage === 0}
+          >
+            <span className={stage === 0 ? "active" : ""} />{" "}
+            <span className="viewpoint-label">MAP</span>
+          </button>
+          <div className="journey-track">
+            <i />
+          </div>
+          <button
+            onClick={() => travelTo(0.94)}
+            aria-label="View Times Square skyline"
+            aria-pressed={stage === 2}
+          >
+            <span className={stage === 2 ? "active" : ""} />{" "}
+            <span className="viewpoint-label">CITY</span>
+          </button>
+        </div>
+
+        <div className="city-footer-bar">
+          <button
+            className="city-scroll-button"
+            onClick={() =>
+              stage === 2
+                ? document.getElementById("thesis")?.scrollIntoView({
+                    behavior: reduced ? "instant" : "smooth",
+                  })
+                : travelTo(0.94)
+            }
+          >
+            <span>{stage === 2 ? hero.nextCue : hero.scrollCue}</span>
+            <span className="scroll-arrow" aria-hidden="true">
+              ↓
+            </span>
+          </button>
+        </div>
+        <Loader />
       </div>
     </section>
   );
