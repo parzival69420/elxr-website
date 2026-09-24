@@ -147,8 +147,11 @@ const LAYERS: Layer[] = [
   { center: [0, 5, -105], size: [440, 26], slices: 4, spacing: -45, vertical: true, density: 0.4, coverage: 0.48, scale: 0.0042, near: 0, light: 1, speed: 0.6 },
   // Wisps the towers rise out of.
   { center: [-2, 2, -40], size: [150, 150], slices: 5, spacing: 1.8, vertical: false, density: 0.2, coverage: 0.52, scale: 0.0065, near: 18, light: 1.5, speed: 1 },
-  // A few strands drifting between the towers at mid height.
-  { center: [-2, 15, -45], size: [120, 70], slices: 2, spacing: 2, vertical: false, density: 0.1, coverage: 0.56, scale: 0.008, near: 20, light: 1.3, speed: 1.3 },
+  // Strands drifting between the towers, low and at mid height, so the skyline rises through
+  // them. Sized to the island's footprint, so they stay among the buildings and the shoreline
+  // stays clear.
+  { center: [-1, 7, -30], size: [30, 90], slices: 3, spacing: 1.8, vertical: false, density: 0.32, coverage: 0.46, scale: 0.02, near: 20, light: 1.8, speed: 1.2 },
+  { center: [-1, 15, -34], size: [28, 80], slices: 3, spacing: 2, vertical: false, density: 0.26, coverage: 0.48, scale: 0.018, near: 20, light: 1.5, speed: 1.4 },
   // Loose wisps rolling across the bottom of the frame, below the headline.
   { center: [-2, 7, -4], size: [110, 44], slices: 3, spacing: 2.6, vertical: false, density: 0.42, coverage: 0.46, scale: 0.01, near: 20, light: 2.2, speed: 1.6 },
 ];

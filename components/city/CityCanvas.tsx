@@ -29,7 +29,7 @@ import CityClouds from "./CityClouds";
 const CITY_TARGET = new THREE.Vector3(-1.5, 16, -22);
 const CITY_HEADING = -0.02;
 const CITY_ANGLE = 1.1; // from straight down; lower looks down more steeply
-const CITY_RADIUS = { desktop: 72, mobile: 84 };
+const CITY_RADIUS = { desktop: 80, mobile: 92 };
 const CITY_FOV = { desktop: 29, mobile: 40 };
 
 // Model downloads go through three's default manager; the loading screen reads this.

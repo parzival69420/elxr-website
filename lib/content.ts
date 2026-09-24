@@ -373,6 +373,21 @@ export const about = {
     "ELXR exists to run that playbook for brands that can't outspend anyone: strong ideas, relentless content, launches built to travel, budgets treated like they're ours. AI-assisted everywhere it makes us faster. Human everywhere it makes us better.",
     "Brewed in New York. Served wherever growth is ordered.",
   ],
+  // The founder's lanyard pass (components/FounderBadge). Set `photo` to a /public path once
+  // the portrait arrives [NAV: founder photo, optional]; until then the pass shows the initials.
+  founder: {
+    name: 'Pranav "Nav" Prakash',
+    role: "Founder",
+    initials: "NP",
+    photo: null as string | null,
+    coordinates: "40.71°N",
+    based: ["New York", "New Jersey"],
+    bio: "7+ years engineering campaigns for global brands. Now running that playbook for brands that can't outspend anyone.",
+    title: ["Attention", "Engineer"],
+    tenureLabel: "In the lab",
+    tenure: "7+ yrs",
+    method: "AI-assisted where it makes us faster. Human where it makes us better.",
+  },
 };
 
 export const faq = {
