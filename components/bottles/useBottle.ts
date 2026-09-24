@@ -93,29 +93,58 @@ export function useBottle(index: number) {
         material.depthWrite = true;
         material.clearcoat = 0.4;
         material.clearcoatRoughness = 0.03;
-        material.emissive.copy(tint);
-        material.emissiveIntensity = 0.035;
         material.envMapIntensity = 0.8;
         object.geometry.computeBoundingBox();
-        const fill = object.geometry.boundingBox!.max.y;
+        const { min, max } = object.geometry.boundingBox!;
+        const fill = max.y;
+        // The liquid glows at its edges: HDR emission above the bloom threshold where it curves
+        // away (the rim) and in a hot meniscus line at the surface, with faint bands of light
+        // rising through it. The body stays clear so the energy filaments read through it.
+        // Fully saturated, or tone mapping turns the bright glow pastel.
+        const hsl = { h: 0, s: 0, l: 0 };
+        const glowColor = tint.clone().setHSL(tint.getHSL(hsl).h, 1, 0.5);
         material.onBeforeCompile = (shader) => {
           shader.uniforms.uFluidTime = fluid.time;
           shader.uniforms.uFluidTilt = fluid.tilt;
           shader.uniforms.uFillLevel = { value: fill };
+          shader.uniforms.uFillBase = { value: min.y };
+          shader.uniforms.uGlowColor = { value: glowColor };
           shader.vertexShader = shader.vertexShader
             .replace(
               "#include <common>",
               `#include <common>
-            uniform float uFluidTime; uniform float uFluidTilt; uniform float uFillLevel;`,
+            uniform float uFluidTime; uniform float uFluidTilt; uniform float uFillLevel;
+            varying vec3 vFluid;`,
             )
             .replace(
               "#include <begin_vertex>",
               `#include <begin_vertex>
               float surface = smoothstep(uFillLevel-.09,uFillLevel,position.y);
-              transformed.y += surface*(sin(position.x*8.+uFluidTime)*cos(position.z*9.+uFluidTime*.8)*.009 + position.x*uFluidTilt);`,
+              transformed.y += surface*(sin(position.x*8.+uFluidTime)*cos(position.z*9.+uFluidTime*.8)*.009 + position.x*uFluidTilt);
+              vFluid = transformed;`,
+            );
+          shader.fragmentShader = shader.fragmentShader
+            .replace(
+              "#include <common>",
+              `#include <common>
+            uniform float uFluidTime; uniform float uFillLevel; uniform float uFillBase; uniform vec3 uGlowColor;
+            varying vec3 vFluid;`,
+            )
+            .replace(
+              "#include <emissivemap_fragment>",
+              `#include <emissivemap_fragment>
+              {
+                float facing = abs(dot(normal, normalize(vViewPosition)));
+                float rim = pow(1. - facing, 2.2);
+                float depth = clamp((vFluid.y - uFillBase) / max(uFillLevel - uFillBase, 1e-3), 0., 1.);
+                float meniscus = smoothstep(uFillLevel - .06, uFillLevel - .008, vFluid.y);
+                float rising = .5 + .5 * sin(vFluid.y * 34. - uFluidTime * 1.6 + sin(vFluid.x * 12. + uFluidTime * .7) * 1.4);
+                float glow = .06 + rim * rim * 2.4 + meniscus * 2.4 + rising * rim * .5 + (1. - depth) * .06;
+                totalEmissiveRadiance += uGlowColor * glow;
+              }`,
             );
         };
-        material.customProgramCacheKey = () => "elxr-liquid-surface-v2";
+        material.customProgramCacheKey = () => "elxr-liquid-glow-v1";
       } else if (original.name === "Ceramic inserts") {
         // Glossy black enamel: dark, but it still catches the studio strips.
         material.roughness = 0.18;

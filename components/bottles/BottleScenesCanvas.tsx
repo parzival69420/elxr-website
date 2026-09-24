@@ -114,7 +114,8 @@ function ScrollBottle({
     if (cap) cap.position.y = capY + pose.open * 0.3;
     for (const material of materials)
       if (material.name === "Energy")
-        material.emissiveIntensity = 0.82 + pose.glow * 1.1;
+        // HDR: the filaments sit well above the bloom threshold, so they glow through the liquid.
+        material.emissiveIntensity = 2.2 + pose.glow * 1.6;
   });
   return (
     <group ref={root} visible={false}>
@@ -218,7 +219,7 @@ function Bottles({ reduced, mobile }: { reduced: boolean; mobile: boolean }) {
   );
 }
 
-/** Soft bloom on the energy cores; the canvas stays transparent so the page's panels show through. */
+/** Bloom on the energy cores and the glowing liquid; the canvas stays transparent so the page's panels show through. */
 function Effects({ onReady }: { onReady: () => void }) {
   const { gl, scene, camera, size } = useThree();
   const composer = useMemo(() => {
@@ -230,7 +231,7 @@ function Effects({ onReady }: { onReady: () => void }) {
     });
     const c = new EffectComposer(gl, target);
     c.addPass(new RenderPass(scene, camera));
-    c.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.14, 0.3, 1.3));
+    c.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.3, 0.45, 1.3));
     c.addPass(new OutputPass());
     return c;
   }, [gl, scene, camera]);
