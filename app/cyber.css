@@ -909,3 +909,154 @@ section.cyber-work.work-section {
     display: none;
   }
 }
+
+/* ---------- Skyline hero: neon signage ----------
+   The headline reads as a sign hung over the city: a two-tone tube matching the rooftop strips
+   (pink, then cyan), with a white-hot core and a stacked falloff for the HDR bloom. It powers on
+   once as the camera lands; nothing loops. */
+.city-skyline-copy::before {
+  background: radial-gradient(
+    ellipse,
+    var(--city-scrim) 5%,
+    var(--city-scrim-edge) 45%,
+    transparent 73%
+  );
+}
+.city-skyline-copy h2 {
+  color: var(--neon-core);
+  text-shadow:
+    0 0 1px var(--neon-core),
+    0 0 6px var(--neon-pink-hot),
+    0 0 16px var(--neon-pink-soft),
+    0 0 38px var(--neon-pink-soft),
+    0 0 90px var(--neon-magenta-haze);
+}
+.city-skyline-copy h2 em {
+  display: inline-block;
+  color: var(--neon-core-cyan);
+  text-shadow:
+    0 0 1px var(--neon-core-cyan),
+    0 0 6px var(--neon-cyan-hot),
+    0 0 16px var(--neon-cyan-soft),
+    0 0 38px var(--neon-cyan-soft),
+    0 0 90px var(--neon-blue-haze);
+}
+.city-subline {
+  color: var(--text);
+  letter-spacing: 0.01em;
+  text-shadow:
+    0 1px 4px var(--city-night),
+    0 0 14px var(--city-night),
+    0 0 26px var(--neon-magenta-haze);
+}
+/* Opaque, so rooftop neon behind the button can't show through as a stray line. */
+.city-skyline-copy .btn-primary,
+.site-header .nav-contact {
+  background: var(--city-night);
+  color: var(--neon-core);
+  border: 1.5px solid var(--city-pink);
+  text-shadow: 0 0 8px var(--neon-pink-hot);
+  box-shadow:
+    inset 0 0 12px var(--neon-pink-soft),
+    0 0 10px var(--neon-pink-soft),
+    0 0 34px var(--neon-magenta-haze);
+}
+.city-skyline-copy .btn-primary:hover,
+.site-header .nav-contact:hover {
+  background: var(--city-night);
+  box-shadow:
+    inset 0 0 16px var(--neon-pink-hot),
+    0 0 14px var(--neon-pink-hot),
+    0 0 48px var(--neon-pink-soft);
+}
+/* Ignition: each tube stutters on, pink first, then cyan, as the skyline copy arrives. */
+@keyframes neon-ignite {
+  0%, 12%, 22%, 38% { opacity: 0.15; text-shadow: none; }
+  8%, 17%, 30%, 100% { opacity: 1; }
+}
+.city-viewport[data-stage="skyline"] .city-skyline-copy h2 {
+  animation: neon-ignite 0.9s steps(1, end) 0.15s both;
+}
+.city-viewport[data-stage="skyline"] .city-skyline-copy h2 em {
+  animation: neon-ignite 0.9s steps(1, end) 0.45s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .city-viewport[data-stage="skyline"] .city-skyline-copy h2,
+  .city-viewport[data-stage="skyline"] .city-skyline-copy h2 em {
+    animation: none;
+  }
+}
+
+/* ---------- Nav: neon sign tubes ----------
+   Links are unlit tubes until hovered or focused, when they flicker on in their own colour; the
+   section in view stays lit. One glow bar (Nav.tsx) slides under whichever link is lit. */
+.nav-links li {
+  position: relative;
+}
+.nav-links [data-tube="pink"],
+.city-menu a {
+  --tube: var(--city-pink);
+  --tube-hot: var(--neon-pink-hot);
+  --tube-soft: var(--neon-pink-soft);
+}
+.nav-links [data-tube="cyan"] {
+  --tube: var(--city-cyan);
+  --tube-hot: var(--neon-cyan-hot);
+  --tube-soft: var(--neon-cyan-soft);
+}
+.nav-links a,
+.city-menu a {
+  --lit: 0 0 1px var(--neon-core), 0 0 5px var(--tube-hot), 0 0 14px var(--tube-soft),
+    0 0 30px var(--tube-soft);
+  color: rgba(247, 244, 240, 0.72);
+  transition: color 0.15s;
+}
+.nav-links a:hover,
+.nav-links a:focus-visible,
+.nav-links a[aria-current],
+.city-menu a:hover,
+.city-menu a:focus-visible {
+  color: var(--neon-core);
+  text-shadow: var(--lit);
+}
+/* Hovering strikes the tube: it stutters before it holds. */
+@keyframes neon-strike {
+  0%, 18%, 40% { text-shadow: none; color: rgba(247, 244, 240, 0.72); }
+  8%, 28%, 55%, 100% { text-shadow: var(--lit); color: var(--neon-core); }
+}
+.nav-links a:hover,
+.nav-links a:focus-visible,
+.city-menu a:hover,
+.city-menu a:focus-visible {
+  animation: neon-strike 0.42s steps(1, end);
+}
+.nav-glow {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  bottom: -9px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tube);
+  box-shadow:
+    0 0 4px var(--tube-hot),
+    0 0 12px var(--tube-soft),
+    0 -4px 22px var(--tube-soft);
+  pointer-events: none;
+}
+.site-header .elxr-wordmark {
+  color: var(--neon-core);
+  text-shadow:
+    0 0 1px var(--neon-core),
+    0 0 6px var(--neon-pink-hot),
+    0 0 18px var(--neon-pink-soft),
+    0 0 40px var(--neon-magenta-haze);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-links a:hover,
+  .nav-links a:focus-visible,
+  .city-menu a:hover,
+  .city-menu a:focus-visible {
+    animation: none;
+  }
+}

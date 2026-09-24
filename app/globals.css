@@ -335,6 +335,17 @@ body {
   --city-pink: #ff49ba;
   --city-cyan: #83e4f2;
   --city-muted: #bdc7d6;
+  /* Neon signage on the skyline hero: a white-hot core, then the tube colour falling off. */
+  --neon-core: #fff6fc;
+  --neon-core-cyan: #effeff;
+  --neon-pink-hot: rgba(255, 73, 186, 0.95);
+  --neon-pink-soft: rgba(255, 73, 186, 0.5);
+  --neon-magenta-haze: rgba(180, 63, 214, 0.4);
+  --neon-cyan-hot: rgba(131, 228, 242, 0.95);
+  --neon-cyan-soft: rgba(131, 228, 242, 0.5);
+  --neon-blue-haze: rgba(70, 120, 255, 0.35);
+  --city-scrim: rgba(5, 7, 25, 0.82);
+  --city-scrim-edge: rgba(5, 7, 25, 0.45);
 }
 .city-journey {
   position: relative;

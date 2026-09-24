@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { global } from "@/lib/content";
 import { getLenis } from "@/lib/smoothScroll";
 
@@ -18,6 +19,29 @@ export default function Nav() {
     update();
     return () => window.removeEventListener("scroll", update);
   }, []);
+  // Neon tubes: a link lights up while hovered or focused, and the section in view stays lit.
+  // One glow bar slides to whichever link is lit.
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [active, setActive] = useState<string | null>(null);
+  const reduced = useReducedMotion();
+  useEffect(() => {
+    const sections = global.navLinks
+      .map((link) => document.getElementById(link.href.slice(1)))
+      .filter((section): section is HTMLElement => !!section);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries)
+          if (entry.isIntersecting) setActive(`#${entry.target.id}`);
+          else setActive((current) => (current === `#${entry.target.id}` ? null : current));
+      },
+      // A band across the middle of the viewport: the section crossing it is the one in view.
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+  const activeIndex = global.navLinks.findIndex((link) => link.href === active);
+  const lit = hovered ?? (activeIndex >= 0 ? activeIndex : null);
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -67,10 +91,29 @@ export default function Nav() {
         >
           ELXR<span>CREATIVE</span>
         </a>
-        <ul className="nav-links">
-          {global.navLinks.map((link) => (
-            <li key={link.href}>
-              <a href={link.href}>{link.label}</a>
+        <ul className="nav-links" onMouseLeave={() => setHovered(null)}>
+          {global.navLinks.map((link, index) => (
+            // Tubes alternate pink and cyan, like the rooftop strips.
+            <li key={link.href} data-tube={index % 2 ? "cyan" : "pink"}>
+              <a
+                href={link.href}
+                aria-current={active === link.href ? "location" : undefined}
+                onMouseEnter={() => setHovered(index)}
+                onFocus={() => setHovered(index)}
+                onBlur={() => setHovered(null)}
+              >
+                {link.label}
+              </a>
+              {lit === index && (
+                <motion.span
+                  layoutId="nav-glow"
+                  className="nav-glow"
+                  aria-hidden="true"
+                  transition={
+                    reduced ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 40 }
+                  }
+                />
+              )}
             </li>
           ))}
         </ul>

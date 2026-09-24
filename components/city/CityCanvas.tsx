@@ -19,6 +19,7 @@ import CityBillboards from "./CityBillboards";
 import Blueprint from "./Blueprint";
 import { BoroughGlow, Chrysler, DistantLights, FloatingLights, LandmarkLights, Steam } from "./CityExtras";
 import { CityAtmosphere, CityEffects } from "./CityAtmosphere";
+import CityClouds from "./CityClouds";
 
 // The resting shot: from above lower Manhattan, looking level up Broadway toward Times Square
 // and Midtown. The camera sits a little above the look target, so the skyline fills the lower
@@ -243,6 +244,7 @@ export default function CityCanvas({
           <BoroughGlow />
           <DistantLights mobile={mobile} reduced={reduced} />
         </RevealAt>
+        <CityClouds mobile={mobile} />
         <CityEffects ao={quality === 2} msaa={msaa} reduced={reduced} onReady={ready} />
       </Suspense>
     </Canvas>
