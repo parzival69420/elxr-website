@@ -11,24 +11,14 @@ import About from "@/components/About";
 import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
-
-const cityModels = [
-  "architecture-kit",
-  "street-kit",
-  "one-times-square",
-  "empire-state",
-  "one-world-trade",
-  "one-vanderbilt",
-  "hudson-yards-edge",
-];
+import { cityModelsInlineScript } from "@/lib/cityModels";
 
 export default function Home() {
   return (
     <main>
-      {/* The hero city's models start downloading with the page, not after the 3D code loads. */}
-      {cityModels.map((file) => (
-        <link key={file} rel="preload" href={`/models/city/${file}.glb`} as="fetch" crossOrigin="anonymous" />
-      ))}
+      {/* The hero city's models start downloading with the page, not after the 3D code loads.
+          The loading screen collects the bytes and hands them to three's cache (lib/cityModels). */}
+      <script dangerouslySetInnerHTML={{ __html: cityModelsInlineScript }} />
       {/* Set before first paint: the page opens on the bare map (Hero clears the flag once the city has risen),
           and `js` lets the bottle scenes pin; without it they stay stacked, readable panels. */}
       <script

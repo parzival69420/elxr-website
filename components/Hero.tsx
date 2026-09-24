@@ -19,10 +19,20 @@ import {
   cityJourney,
   signalCityReady,
 } from "@/lib/city";
+import { prefetchCityModels } from "@/lib/cityModels";
 import ManhattanMap from "./city/ManhattanMap";
 import BlueprintLoader from "./BlueprintLoader";
 
-const CityCanvas = dynamic(() => import("./city/CityCanvas"), { ssr: false });
+// The scene mounts only once its models are downloaded and sitting in three's cache, so the
+// build after the loading screen never waits on the network.
+const CityCanvas = dynamic(
+  () =>
+    Promise.all([import("./city/CityCanvas"), prefetchCityModels()]).then(([module, buffers]) => {
+      module.primeModelCache(buffers);
+      return module.default;
+    }),
+  { ssr: false },
+);
 class SceneBoundary extends Component<
   { children: ReactNode; onFailure: () => void },
   { failed: boolean }

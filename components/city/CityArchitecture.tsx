@@ -188,4 +188,3 @@ export function CityStreetLife({reduced,mobile}:{reduced:boolean;mobile:boolean}
 }
 
 // Preload only the scene assets; no external model or decoder requests at runtime.
-for(const file of ["architecture-kit","street-kit",...models.map(m=>m.file)])useGLTF.preload(`${BASE}${file}.glb`);

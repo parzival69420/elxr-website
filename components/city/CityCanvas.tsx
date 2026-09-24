@@ -35,6 +35,12 @@ const CITY_FOV = { desktop: 29, mobile: 40 };
 THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => {
   if (total) cityJourney.load = Math.max(cityJourney.load, loaded / total);
 };
+/** Hands the loading screen's downloads to three: GLTFLoader reads files through
+ *  THREE.Cache first, so useGLTF parses these bytes without another request. */
+export function primeModelCache(buffers: Map<string, ArrayBuffer>) {
+  THREE.Cache.enabled = true;
+  buffers.forEach((buffer, url) => THREE.Cache.add(url, buffer));
+}
 const REVEAL_TILT = 0.42;
 const REVEAL_TURN = 0.18;
 // Every camera move eases in and out: no move starts or stops at full speed.
