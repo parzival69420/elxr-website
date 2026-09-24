@@ -231,20 +231,25 @@ export function Plaza() {
           <meshBasicMaterial color="#718290" transparent opacity={0.5} />
         </mesh>
       ))}
-      <pointLight
-        position={[-2, 5, 4]}
-        color="#ff1d8f"
-        intensity={38}
-        distance={15}
-        decay={2}
-      />
-      <pointLight
-        position={[2, 6, -4]}
-        color="#0cbdff"
-        intensity={30}
-        distance={15}
-        decay={2}
-      />
     </group>
+  );
+}
+
+/** Times Square's neon spill. Kept outside the reveal groups and faded in by intensity instead:
+ *  the light count is part of every lit shader, so adding lights mid-flight would switch the
+ *  program of every material in the city on one frame. */
+export function PlazaLights({ from }: { from: number }) {
+  const pink = useRef<THREE.PointLight>(null);
+  const blue = useRef<THREE.PointLight>(null);
+  useFrame(() => {
+    const on = cityJourney.reveal >= from ? 1 : 0;
+    if (pink.current) pink.current.intensity = 38 * on;
+    if (blue.current) blue.current.intensity = 30 * on;
+  });
+  return (
+    <>
+      <pointLight ref={pink} position={[-2, 5, 4]} color="#ff1d8f" intensity={0} distance={15} decay={2} />
+      <pointLight ref={blue} position={[2, 6, -4]} color="#0cbdff" intensity={0} distance={15} decay={2} />
+    </>
   );
 }

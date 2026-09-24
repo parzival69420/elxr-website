@@ -1,7 +1,7 @@
 "use client";
 
 import "@/lib/rafFallback";
-import { Suspense, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
@@ -12,7 +12,7 @@ import {
   cityJourney,
   LOAD_ZOOM,
 } from "@/lib/city";
-import { Ground, Broadway, Plaza, Traffic } from "./CityGeometry";
+import { Ground, Broadway, Plaza, PlazaLights, Traffic } from "./CityGeometry";
 import CentralPark from "./CentralPark";
 import { CityBuildings, CityEnvironment, CityLandmarks, CityStreetLife } from "./CityArchitecture";
 import CityBillboards from "./CityBillboards";
@@ -68,28 +68,40 @@ function IntroDone({ onDone }: { onDone: () => void }) {
   return null;
 }
 
+/** Frames every part of the city is drawn for under the loading sheet (see RevealAt). */
+const WARM_FRAMES = 3;
+
 /** Parts of the city that switch on at a point in the reveal (see Blueprint for the phases). */
 function RevealAt({ from, children }: { from: number; children: ReactNode }) {
   const group = useRef<THREE.Group>(null);
-  const { gl, camera, scene } = useThree();
-  // Hidden objects are skipped by the renderer, so their shaders and textures would otherwise
-  // be built on the frame they first appear: mid camera flight, as a visible hitch.
-  // Build them now, while the loading sheet still covers the canvas.
-  useEffect(() => {
+  // Hidden objects are skipped by the renderer, so their shaders, pipelines and textures would
+  // otherwise be built on the frame they first appear: mid camera flight, as a visible freeze.
+  // Instead they are drawn for a few real frames, through the same composer and targets as the
+  // flight, while the loading sheet still covers the canvas. The reflections (CityEnvironment)
+  // arrive a little later and change every lit shader, so their arrival warms everything again.
+  // Culling is off while warming so parts outside the loading view are built too.
+  const warm = useRef({
+    frames: WARM_FRAMES,
+    environment: undefined as THREE.Texture | null | undefined,
+    culled: [] as THREE.Object3D[],
+  });
+  useFrame(({ scene }) => {
     const root = group.current;
     if (!root) return;
-    root.visible = true;
-    gl.compile(root, camera, scene);
-    root.traverse((object) => {
-      const materials = (object as THREE.Mesh).material;
-      for (const material of Array.isArray(materials) ? materials : materials ? [materials] : [])
-        for (const value of Object.values(material))
-          if (value instanceof THREE.Texture) gl.initTexture(value);
-    });
-    root.visible = cityJourney.reveal >= from;
-  }, [gl, camera, scene, from]);
-  useFrame(() => {
-    if (group.current) group.current.visible = cityJourney.reveal >= from;
+    const state = warm.current;
+    if (state.environment !== scene.environment && cityJourney.reveal === 0) {
+      state.environment = scene.environment;
+      if (state.frames === WARM_FRAMES)
+        root.traverse((object) => {
+          if (object.frustumCulled) state.culled.push(object);
+          object.frustumCulled = false;
+        });
+      state.frames = 0;
+    } else if (state.frames < WARM_FRAMES && ++state.frames === WARM_FRAMES) {
+      state.culled.forEach((object) => (object.frustumCulled = true));
+      state.culled.length = 0;
+    }
+    root.visible = state.frames < WARM_FRAMES || cityJourney.reveal >= from;
   });
   return <group ref={group}>{children}</group>;
 }
@@ -213,6 +225,7 @@ export default function CityCanvas({
         <Blueprint mobile={mobile} />
         <CityBuildings mobile={mobile} />
         <CityLandmarks />
+        <PlazaLights from={0.42} />
         <RevealAt from={0.42}>
           <Plaza />
           <CentralPark />
