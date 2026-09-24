@@ -15,8 +15,14 @@ export const scanLine = { value: 1e4 };
 /** Blends a textured building material toward the stylized city: indigo massing shaded by
  *  height and face, a magenta rim on silhouettes, and a neon strip under a third of roofs.
  *  The facade texture and lit windows still read through at CITY_TEXTURE_MIX. Composes
- *  with any onBeforeCompile the material already has. */
+ *  with any onBeforeCompile the material already has, and applies once per material. */
+const stylized = new WeakSet<THREE.Material>();
+
 export function stylize(material: THREE.Material, height: number) {
+  // Cached GLTF materials survive remounts (and StrictMode's double memo): wrapping twice
+  // injects the declarations twice and the program fails with "redefinition".
+  if (stylized.has(material)) return material;
+  stylized.add(material);
   const previous = material.onBeforeCompile.bind(material);
   const previousKey = material.customProgramCacheKey.bind(material);
   material.onBeforeCompile = (shader, renderer) => {
